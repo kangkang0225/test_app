@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>成都腕带漫游实验台</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="返回控制台顶部">
+      <span class="brand-mark">蜀</span>
+      <span><strong>成都腕带漫游</strong><small>EDGE LAB / 本地测试台</small></span>
+    </a>
+    <div class="connection-actions">
+      <span id="connectionPill" class="status-pill offline"><i></i><span>设备未连接</span></span>
+      <button id="connectionButton" class="secondary-button" type="button">连接全部设备</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">一只手环，穿行真实成都</p>
+        <h1>点击景点，模拟<br><em>进入与离开</em></h1>
+        <p class="hero-copy">每张景点卡片就是一次真实的边缘感知。首次点击进入，自动触发该点位配置的 UHF、HF 与边缘设备；再次点击离开。</p>
+      </div>
+      <div class="hero-note">
+        <span>当前所在</span>
+        <strong id="currentAttraction">尚未进入景点</strong>
+        <small id="currentSince">连接设备后开始测试</small>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="测试概况">
+      <article><span>成都景点</span><strong id="attractionCount">—</strong></article>
+      <article><span>在线节点</span><strong><b id="onlineCount">0</b><small id="nodeCount"> / 0</small></strong></article>
+      <article><span>当前状态</span><strong id="journeyStatus">等待连接</strong></article>
+    </section>
+
+    <div class="workspace">
+      <section class="attractions-section">
+        <div class="section-heading">
+          <div><p>SCENIC ROUTE</p><h2>选择下一站</h2></div>
+          <span>同一时间只进入一个景点</span>
+        </div>
+        <div id="attractionGrid" class="attraction-grid" aria-live="polite">
+          <div class="loading-card">正在读取景点配置……</div>
+        </div>
+      </section>
+
+      <aside class="activity-panel">
+        <div class="section-heading compact">
+          <div><p>LIVE TRACE</p><h2>交互轨迹</h2></div>
+          <span class="live-dot">实时</span>
+        </div>
+        <ol id="activityList" class="activity-list">
+          <li class="empty-log">尚无交互记录</li>
+        </ol>
+      </aside>
+    </div>
+
+    <section class="nodes-section">
+      <details>
+        <summary><span>查看全部模拟节点</span><small id="nodeSummary">0 个节点</small></summary>
+        <div id="nodeGrid" class="node-grid"></div>
+      </details>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

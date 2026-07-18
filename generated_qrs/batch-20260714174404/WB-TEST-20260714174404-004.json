@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "type": "wristband",
+  "uid": "WB-TEST-20260714174404-004",
+  "qr_code": "QR-43D7A107F3CCEF9F7CA69A00684E3C72",
+  "uhf_a_uid": "A84D675875CA8442",
+  "uhf_b_uid": "68B0113F01D147A4",
+  "uhf_c_uid": "C66AFE62B3CDF341",
+  "hf_uid": "B3C64CAEE835A436"
+}

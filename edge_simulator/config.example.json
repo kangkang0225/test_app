@@ -1,0 +1,113 @@
+{
+  "backend": {
+    "http_base": "http://127.0.0.1:9001",
+    "tcp_host": "127.0.0.1",
+    "tcp_port": 9002,
+    "connect_timeout_seconds": 5,
+    "response_timeout_seconds": 5,
+    "heartbeat_interval_seconds": 15
+  },
+  "wristband": {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-SIM-0001",
+    "qr_code": "WB-SIM-0001",
+    "uhf_a_uid": "E200SIM000000000000000A1",
+    "uhf_b_uid": "E200SIM000000000000000B1",
+    "uhf_c_uid": "E200SIM000000000000000C1",
+    "hf_uid": "04SIM000000001"
+  },
+  "readers": [
+    {
+      "name": "uhf-reader",
+      "device_id": "SIM-UHF-READER-001",
+      "device_type": "UHF"
+    },
+    {
+      "name": "hf-reader",
+      "device_id": "SIM-HF-READER-001",
+      "device_type": "HF"
+    }
+  ],
+  "devices": [
+    {
+      "name": "camera",
+      "device_id": "SIM-CAMERA-001",
+      "device_type": "camera",
+      "auto_ack": "success",
+      "ack_delay_ms": 120,
+      "auto_upload": true,
+      "config": {
+        "simulated": true
+      }
+    },
+    {
+      "name": "light",
+      "device_id": "SIM-LIGHT-001",
+      "device_type": "light",
+      "auto_ack": "success",
+      "ack_delay_ms": 80,
+      "config": {
+        "simulated": true
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "tag": "uhf_b",
+      "device_type": "camera",
+      "action": "capture",
+      "params_template": {
+        "mode": "photo"
+      }
+    },
+    {
+      "tag": "uhf_c",
+      "device_type": "light",
+      "action": "on",
+      "params_template": {
+        "color": "warm"
+      }
+    }
+  ],
+  "app": {
+    "token_env": "SIM_APP_TOKEN",
+    "jwt_secret_env": "SIM_JWT_SECRET",
+    "user_id": 1,
+    "jwt_algorithm": "auto",
+    "token_ttl_seconds": 3600
+  },
+  "provision": {
+    "admin_username_env": "SIM_ADMIN_USERNAME",
+    "admin_password_env": "SIM_ADMIN_PASSWORD",
+    "admin_username": "admin",
+    "user_id": 1,
+    "scenic_area": {
+      "area_id": "SIM-AREA-001",
+      "name": "模拟测试景区",
+      "region": "本地测试环境",
+      "description": "边缘设备模拟器专用数据",
+      "status": "active"
+    },
+    "spot": {
+      "spot_id": "SIM-SPOT-001",
+      "site": "模拟互动点",
+      "description": "UHF 与 HF 综合测试点",
+      "latitude": 30.6586,
+      "longitude": 104.0647,
+      "status": "active"
+    }
+  },
+  "scenario": {
+    "dwell_seconds": 35,
+    "step_delay_ms": 400,
+    "hf_command": {
+      "enabled": false,
+      "device_id": "SIM-LIGHT-001",
+      "action": "on",
+      "params": {
+        "color": "blue"
+      }
+    }
+  }
+}

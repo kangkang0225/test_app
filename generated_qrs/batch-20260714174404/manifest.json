@@ -1,0 +1,52 @@
+[
+  {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-TEST-20260714174404-001",
+    "qr_code": "QR-567450ABF9687A5324DAFE002D8E9582",
+    "uhf_a_uid": "CF1EBBA6577D5FD2",
+    "uhf_b_uid": "EDE04D84C8779490",
+    "uhf_c_uid": "917946F06E5C2CF5",
+    "hf_uid": "3FCEF2D604DC109D"
+  },
+  {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-TEST-20260714174404-002",
+    "qr_code": "QR-6A39E717E538FD34949A7B7469A010AB",
+    "uhf_a_uid": "800D4828A4E3B936",
+    "uhf_b_uid": "2D5E146D13AF84EC",
+    "uhf_c_uid": "C99FA2524C843DAE",
+    "hf_uid": "B3C85D2F6DBDBD85"
+  },
+  {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-TEST-20260714174404-003",
+    "qr_code": "QR-1D75C548ED637A6AB77A708526BD11F3",
+    "uhf_a_uid": "B45F585B0D870D89",
+    "uhf_b_uid": "8D362338CD24535E",
+    "uhf_c_uid": "69D54493D09801A4",
+    "hf_uid": "6A37183A8642BB89"
+  },
+  {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-TEST-20260714174404-004",
+    "qr_code": "QR-43D7A107F3CCEF9F7CA69A00684E3C72",
+    "uhf_a_uid": "A84D675875CA8442",
+    "uhf_b_uid": "68B0113F01D147A4",
+    "uhf_c_uid": "C66AFE62B3CDF341",
+    "hf_uid": "B3C64CAEE835A436"
+  },
+  {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-TEST-20260714174404-005",
+    "qr_code": "QR-100CA3CBF77107AA138076E977473461",
+    "uhf_a_uid": "51D3A12047CAE892",
+    "uhf_b_uid": "347E006AB84E2906",
+    "uhf_c_uid": "142023E0DC11CE1B",
+    "hf_uid": "4F7AB377D0924FDA"
+  }
+]

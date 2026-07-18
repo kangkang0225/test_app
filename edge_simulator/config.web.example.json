@@ -1,0 +1,166 @@
+{
+  "backend": {
+    "http_base": "http://127.0.0.1:9001",
+    "tcp_host": "127.0.0.1",
+    "tcp_port": 9002,
+    "connect_timeout_seconds": 5,
+    "response_timeout_seconds": 5,
+    "heartbeat_interval_seconds": 15
+  },
+  "wristband": {
+    "version": 1,
+    "type": "wristband",
+    "uid": "WB-SIM-CHENGDU-001",
+    "qr_code": "WB-SIM-CHENGDU-001",
+    "uhf_a_uid": "E200CDSIM0000000000000A1",
+    "uhf_b_uid": "E200CDSIM0000000000000B1",
+    "uhf_c_uid": "E200CDSIM0000000000000C1",
+    "hf_uid": "04CDSIM0000001"
+  },
+  "attractions": [
+    {
+      "id": "wuhouci",
+      "name": "武侯祠",
+      "district": "武侯区 · 锦里片区",
+      "description": "红墙竹影之间完成基础到访打卡，只布置位置感知。",
+      "spot_id": "SIM-CD-WUHOUCI",
+      "tags": ["uhf_a"],
+      "simulated_dwell_seconds": 35,
+      "accent": "#A94235",
+      "latitude": 30.6456,
+      "longitude": 104.0431
+    },
+    {
+      "id": "panda",
+      "name": "成都大熊猫繁育研究基地",
+      "district": "成华区 · 熊猫大道",
+      "description": "进入园区后触发 UHF 按键意图，由模拟相机完成游客抓拍。",
+      "spot_id": "SIM-CD-PANDA",
+      "tags": ["uhf_a", "uhf_b"],
+      "simulated_dwell_seconds": 42,
+      "accent": "#48745C",
+      "latitude": 30.7381,
+      "longitude": 104.1456
+    },
+    {
+      "id": "dufu",
+      "name": "杜甫草堂",
+      "district": "青羊区 · 浣花溪",
+      "description": "位置打卡叠加 UHF 手势交互，点亮一组诗意环境灯光。",
+      "spot_id": "SIM-CD-DUFU",
+      "tags": ["uhf_a", "uhf_c"],
+      "simulated_dwell_seconds": 38,
+      "accent": "#56715A",
+      "latitude": 30.6604,
+      "longitude": 104.0287
+    },
+    {
+      "id": "jinsha",
+      "name": "金沙遗址博物馆",
+      "district": "青羊区 · 金沙片区",
+      "description": "同时验证相机抓拍与环境灯光，是 UHF 多设备组合测试点。",
+      "spot_id": "SIM-CD-JINSHA",
+      "tags": ["uhf_a", "uhf_b", "uhf_c"],
+      "simulated_dwell_seconds": 45,
+      "accent": "#B9852E",
+      "latitude": 30.6809,
+      "longitude": 104.0126
+    },
+    {
+      "id": "kuanzhai",
+      "name": "宽窄巷子",
+      "district": "青羊区 · 少城片区",
+      "description": "UHF 到访后通过 HF 完成近场确权，可继续测试现场灯光控制。",
+      "spot_id": "SIM-CD-KUANZHAI",
+      "tags": ["uhf_a", "hf"],
+      "simulated_dwell_seconds": 35,
+      "accent": "#8A5C42",
+      "latitude": 30.6694,
+      "longitude": 104.0551
+    },
+    {
+      "id": "qingcheng",
+      "name": "青城山",
+      "district": "都江堰市 · 青城山镇",
+      "description": "四标签全链路点位，集中验证到访、抓拍、灯光和 HF 近场授权。",
+      "spot_id": "SIM-CD-QINGCHENG",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 52,
+      "accent": "#245B48",
+      "latitude": 30.8992,
+      "longitude": 103.5704
+    },
+    {
+      "id": "dujiangyan",
+      "name": "都江堰景区",
+      "district": "都江堰市 · 灌口街道",
+      "description": "基础到访结合相机抓拍，验证跨城区点位的设备路由。",
+      "spot_id": "SIM-CD-DUJIANGYAN",
+      "tags": ["uhf_a", "uhf_b"],
+      "simulated_dwell_seconds": 48,
+      "accent": "#39718A",
+      "latitude": 31.0037,
+      "longitude": 103.6192
+    },
+    {
+      "id": "taikooli",
+      "name": "春熙路·太古里",
+      "district": "锦江区 · 春熙路商圈",
+      "description": "UHF 手势灯光与 HF 近场控制组合，模拟城市夜游互动。",
+      "spot_id": "SIM-CD-TAIKOOLI",
+      "tags": ["uhf_a", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 35,
+      "accent": "#A84D54",
+      "latitude": 30.6534,
+      "longitude": 104.0821
+    }
+  ],
+  "readers": [
+    {"name": "wuhouci-uhf", "device_id": "SIM-CD-WUHOUCI-UHF", "device_type": "UHF", "attraction": "wuhouci"},
+    {"name": "panda-uhf", "device_id": "SIM-CD-PANDA-UHF", "device_type": "UHF", "attraction": "panda"},
+    {"name": "dufu-uhf", "device_id": "SIM-CD-DUFU-UHF", "device_type": "UHF", "attraction": "dufu"},
+    {"name": "jinsha-uhf", "device_id": "SIM-CD-JINSHA-UHF", "device_type": "UHF", "attraction": "jinsha"},
+    {"name": "kuanzhai-uhf", "device_id": "SIM-CD-KUANZHAI-UHF", "device_type": "UHF", "attraction": "kuanzhai"},
+    {"name": "kuanzhai-hf", "device_id": "SIM-CD-KUANZHAI-HF", "device_type": "HF", "attraction": "kuanzhai"},
+    {"name": "qingcheng-uhf", "device_id": "SIM-CD-QINGCHENG-UHF", "device_type": "UHF", "attraction": "qingcheng"},
+    {"name": "qingcheng-hf", "device_id": "SIM-CD-QINGCHENG-HF", "device_type": "HF", "attraction": "qingcheng"},
+    {"name": "dujiangyan-uhf", "device_id": "SIM-CD-DUJIANGYAN-UHF", "device_type": "UHF", "attraction": "dujiangyan"},
+    {"name": "taikooli-uhf", "device_id": "SIM-CD-TAIKOOLI-UHF", "device_type": "UHF", "attraction": "taikooli"},
+    {"name": "taikooli-hf", "device_id": "SIM-CD-TAIKOOLI-HF", "device_type": "HF", "attraction": "taikooli"}
+  ],
+  "devices": [
+    {"name": "panda-camera", "device_id": "SIM-CD-PANDA-CAMERA", "device_type": "camera", "attraction": "panda", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "熊猫园区抓拍相机", "simulated": true}},
+    {"name": "dufu-light", "device_id": "SIM-CD-DUFU-LIGHT", "device_type": "light", "attraction": "dufu", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "草堂诗意灯光", "simulated": true}},
+    {"name": "jinsha-camera", "device_id": "SIM-CD-JINSHA-CAMERA", "device_type": "camera", "attraction": "jinsha", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "太阳神鸟抓拍相机", "simulated": true}},
+    {"name": "jinsha-light", "device_id": "SIM-CD-JINSHA-LIGHT", "device_type": "light", "attraction": "jinsha", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "遗址环境灯光", "simulated": true}},
+    {"name": "kuanzhai-light", "device_id": "SIM-CD-KUANZHAI-LIGHT", "device_type": "light", "attraction": "kuanzhai", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "院落近场灯光", "simulated": true}},
+    {"name": "qingcheng-camera", "device_id": "SIM-CD-QINGCHENG-CAMERA", "device_type": "camera", "attraction": "qingcheng", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "山门抓拍相机", "simulated": true}},
+    {"name": "qingcheng-light", "device_id": "SIM-CD-QINGCHENG-LIGHT", "device_type": "light", "attraction": "qingcheng", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "林间互动灯光", "simulated": true}},
+    {"name": "dujiangyan-camera", "device_id": "SIM-CD-DUJIANGYAN-CAMERA", "device_type": "camera", "attraction": "dujiangyan", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "水利景观抓拍相机", "simulated": true}},
+    {"name": "taikooli-light", "device_id": "SIM-CD-TAIKOOLI-LIGHT", "device_type": "light", "attraction": "taikooli", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "夜游互动灯光", "simulated": true}}
+  ],
+  "bindings": [
+    {"tag": "uhf_b", "device_type": "camera", "action": "capture", "params_template": {"mode": "photo"}},
+    {"tag": "uhf_c", "device_type": "light", "action": "on", "params_template": {"color": "warm"}}
+  ],
+  "app": {
+    "token_env": "SIM_APP_TOKEN",
+    "jwt_secret_env": "SIM_JWT_SECRET",
+    "user_id": 1,
+    "jwt_algorithm": "auto",
+    "token_ttl_seconds": 3600
+  },
+  "provision": {
+    "admin_username_env": "SIM_ADMIN_USERNAME",
+    "admin_password_env": "SIM_ADMIN_PASSWORD",
+    "admin_username": "admin",
+    "user_id": 1,
+    "scenic_area": {
+      "area_id": "SIM-CHENGDU-ROUTE",
+      "name": "成都腕带漫游模拟线路",
+      "region": "成都市",
+      "description": "边缘设备模拟器的成都多景点测试数据",
+      "status": "active"
+    }
+  }
+}
