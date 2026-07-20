@@ -33,12 +33,18 @@ def event_batch_body(
     *,
     batch_id: str | None = None,
     sent_at: datetime | None = None,
+    event_type: str | None = None,
 ) -> dict[str, Any]:
+    normalized_event_type = event_type.lower() if event_type else None
+    if normalized_event_type not in {None, "seen", "leave"}:
+        raise ValueError(f"不支持的在场事件类型：{event_type}")
     events = []
     for tag_id, event_time, rssi in tag_events:
         event: dict[str, Any] = {"tag_id": tag_id, "event_time": iso_timestamp(event_time)}
         if rssi is not None:
             event["rssi_strength"] = int(rssi)
+        if normalized_event_type:
+            event["event_type"] = normalized_event_type
         events.append(event)
     if not events:
         raise ValueError("事件批次不能为空")

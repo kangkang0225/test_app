@@ -38,6 +38,14 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(body["events"][0]["rssi_strength"], -51)
         self.assertIn("+00:00", body["events"][0]["event_time"])
 
+    def test_event_batch_can_report_an_explicit_departure(self) -> None:
+        moment = datetime(2026, 7, 19, 14, 31, tzinfo=timezone.utc)
+        body = event_batch_body(
+            "READER-1", [("TAG-1", moment, -46)], event_type="leave"
+        )
+
+        self.assertEqual(body["events"][0]["event_type"], "leave")
+
     def test_command_ack_contract(self) -> None:
         body = command_ack_body("CAM-1", 42, "failed", command_type="UHF", error_code="X")
         self.assertEqual(body["command_id"], 42)

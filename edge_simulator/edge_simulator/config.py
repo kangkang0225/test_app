@@ -27,11 +27,13 @@ class NodeSettings:
     name: str
     device_id: str
     device_type: str
+    hf_purpose: str | None = None
     auto_ack: str = "success"
     ack_delay_ms: int = 100
     auto_upload: bool = False
     config: dict[str, Any] = field(default_factory=dict)
     attraction_id: str | None = None
+    image_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,16 @@ class AttractionSettings:
     accent: str = "#C85B3C"
     latitude: float | None = None
     longitude: float | None = None
+    image_path: Path | None = None
+
+
+@dataclass(frozen=True)
+class UiSettings:
+    eyebrow: str = "RFID SCENIC LAB"
+    title: str = "景区腕带游踪模拟器"
+    description: str = "进入景点时自动上报 UHF-A，其余标签与环境设备由测试员手动触发。"
+    guide_title: str = "景区导览图"
+    guide_image_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -66,6 +78,7 @@ class SimulatorConfig:
     devices: tuple[NodeSettings, ...]
     attractions: tuple[AttractionSettings, ...] = ()
     bindings: tuple[dict[str, Any], ...] = ()
+    ui: UiSettings = field(default_factory=UiSettings)
     app: AppSettings = field(default_factory=AppSettings)
     provision: dict[str, Any] = field(default_factory=dict)
     scenario: dict[str, Any] = field(default_factory=dict)
@@ -74,15 +87,23 @@ class SimulatorConfig:
     def all_nodes(self) -> tuple[NodeSettings, ...]:
         return self.readers + self.devices
 
-    def reader_for_type(self, device_type: str, attraction_id: str | None = None) -> NodeSettings:
+    def reader_for_type(
+        self,
+        device_type: str,
+        attraction_id: str | None = None,
+        *,
+        hf_purpose: str | None = None,
+    ) -> NodeSettings:
         wanted = device_type.upper()
+        purpose = hf_purpose.lower() if hf_purpose else None
         for reader in self.readers:
             if reader.device_type == wanted and (
                 attraction_id is None or reader.attraction_id == attraction_id
-            ):
+            ) and (purpose is None or reader.hf_purpose == purpose):
                 return reader
         suffix = f"（景点 {attraction_id}）" if attraction_id else ""
-        raise ConfigError(f"未配置 {wanted} 类型的读写器{suffix}")
+        purpose_suffix = f"，用途 {purpose}" if purpose else ""
+        raise ConfigError(f"未配置 {wanted} 类型的读写器{suffix}{purpose_suffix}")
 
     def attraction(self, attraction_id: str) -> AttractionSettings:
         for attraction in self.attractions:
@@ -161,7 +182,30 @@ def _load_wristband(raw: dict[str, Any], config_dir: Path) -> dict[str, Any]:
     return result
 
 
-def _load_nodes(raw: Any, section: str) -> tuple[NodeSettings, ...]:
+def _resolve_media_path(
+    value: Any,
+    config_dir: Path,
+    field_name: str,
+    *,
+    jpeg_only: bool = False,
+) -> Path | None:
+    if value in (None, ""):
+        return None
+    raw_path = _required_string(value, field_name)
+    path = Path(raw_path)
+    if not path.is_absolute():
+        path = config_dir / path
+    path = path.resolve()
+    if not path.is_file():
+        raise ConfigError(f"配置项 {field_name} 指向的文件不存在：{path}")
+    suffix = path.suffix.lower()
+    allowed = {".jpg", ".jpeg"} if jpeg_only else {".jpg", ".jpeg", ".png", ".webp"}
+    if suffix not in allowed:
+        raise ConfigError(f"配置项 {field_name} 仅支持：{', '.join(sorted(allowed))}")
+    return path
+
+
+def _load_nodes(raw: Any, section: str, config_dir: Path) -> tuple[NodeSettings, ...]:
     if not isinstance(raw, list) or not raw:
         raise ConfigError(f"配置项 {section} 必须是非空数组")
     nodes: list[NodeSettings] = []
@@ -174,6 +218,18 @@ def _load_nodes(raw: Any, section: str) -> tuple[NodeSettings, ...]:
         name = _required_string(item.get("name"), f"{prefix}.name").lower()
         device_id = _required_string(item.get("device_id"), f"{prefix}.device_id")
         device_type = _required_string(item.get("device_type"), f"{prefix}.device_type").upper()
+        raw_hf_purpose = item.get("hf_purpose")
+        hf_purpose = None
+        if section == "readers" and device_type == "HF":
+            hf_purpose = _required_string(
+                raw_hf_purpose, f"{prefix}.hf_purpose"
+            ).lower()
+            if hf_purpose not in {"checkin", "control"}:
+                raise ConfigError(
+                    f"{prefix}.hf_purpose 只能是 checkin 或 control"
+                )
+        elif raw_hf_purpose is not None:
+            raise ConfigError(f"{prefix} 只有 HF Reader 可以设置 hf_purpose")
         if name in seen_names:
             raise ConfigError(f"{section} 中 name 重复：{name}")
         if device_id in seen_ids:
@@ -189,11 +245,37 @@ def _load_nodes(raw: Any, section: str) -> tuple[NodeSettings, ...]:
         node_config = item.get("config", {})
         if not isinstance(node_config, dict):
             raise ConfigError(f"{prefix}.config 必须是对象")
+        if "hf_control" in node_config and not isinstance(node_config["hf_control"], bool):
+            raise ConfigError(f"{prefix}.config.hf_control 必须是布尔值")
+        controls = node_config.get("controls", [])
+        if not isinstance(controls, list):
+            raise ConfigError(f"{prefix}.config.controls 必须是数组")
+        control_ids: set[str] = set()
+        for control_index, control in enumerate(controls):
+            control_prefix = f"{prefix}.config.controls[{control_index}]"
+            if not isinstance(control, dict):
+                raise ConfigError(f"{control_prefix} 必须是对象")
+            control_id = _required_string(control.get("id"), f"{control_prefix}.id")
+            _required_string(control.get("action"), f"{control_prefix}.action")
+            if control_id in control_ids:
+                raise ConfigError(f"{prefix}.config.controls 中 id 重复：{control_id}")
+            control_ids.add(control_id)
+            if not isinstance(control.get("params", {}), dict):
+                raise ConfigError(f"{control_prefix}.params 必须是对象")
+        image_path = _resolve_media_path(
+            item.get("image"),
+            config_dir,
+            f"{prefix}.image",
+            jpeg_only=True,
+        )
+        if image_path is not None and device_type != "CAMERA":
+            raise ConfigError(f"{prefix}.image 只能配置在 camera 设备上")
         nodes.append(
             NodeSettings(
                 name=name,
                 device_id=device_id,
                 device_type=device_type,
+                hf_purpose=hf_purpose,
                 auto_ack=auto_ack,
                 ack_delay_ms=ack_delay_ms,
                 auto_upload=bool(item.get("auto_upload", False)),
@@ -203,12 +285,13 @@ def _load_nodes(raw: Any, section: str) -> tuple[NodeSettings, ...]:
                     if item.get("attraction") is not None
                     else None
                 ),
+                image_path=image_path,
             )
         )
     return tuple(nodes)
 
 
-def _load_attractions(raw: Any) -> tuple[AttractionSettings, ...]:
+def _load_attractions(raw: Any, config_dir: Path) -> tuple[AttractionSettings, ...]:
     if raw in (None, []):
         return ()
     if not isinstance(raw, list):
@@ -262,6 +345,9 @@ def _load_attractions(raw: Any) -> tuple[AttractionSettings, ...]:
                 accent=accent,
                 latitude=float(latitude) if latitude is not None else None,
                 longitude=float(longitude) if longitude is not None else None,
+                image_path=_resolve_media_path(
+                    item.get("image"), config_dir, f"{prefix}.image"
+                ),
             )
         )
     return tuple(attractions)
@@ -292,10 +378,10 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
         raise ConfigError("backend.heartbeat_interval_seconds 必须大于 0")
 
     wristband = _load_wristband(raw, config_path.parent)
-    attractions = _load_attractions(raw.get("attractions"))
-    readers = _load_nodes(raw.get("readers"), "readers")
+    attractions = _load_attractions(raw.get("attractions"), config_path.parent)
+    readers = _load_nodes(raw.get("readers"), "readers", config_path.parent)
     devices_raw = raw.get("devices", [])
-    devices = _load_nodes(devices_raw, "devices") if devices_raw else ()
+    devices = _load_nodes(devices_raw, "devices", config_path.parent) if devices_raw else ()
     all_ids = [node.device_id for node in readers + devices]
     if len(all_ids) != len(set(all_ids)):
         raise ConfigError("readers 与 devices 中的 device_id 不能重复")
@@ -356,21 +442,60 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
                 reader.device_type == "HF" for reader in attraction_readers
             ):
                 raise ConfigError(f"景点 {attraction.name} 包含 HF 标签，但未配置 HF Reader")
+            if "hf" not in attraction.tags and any(
+                reader.device_type == "HF" for reader in attraction_readers
+            ):
+                raise ConfigError(f"景点 {attraction.name} 配置了 HF Reader，但 tags 中没有 hf")
+            hf_purposes = [
+                reader.hf_purpose
+                for reader in attraction_readers
+                if reader.device_type == "HF"
+            ]
+            if len(hf_purposes) != len(set(hf_purposes)):
+                raise ConfigError(f"景点 {attraction.name} 的同用途 HF Reader 只能配置一个")
+            hf_control_devices = [
+                device for device in attraction_devices
+                if device.config.get("hf_control") is True
+            ]
+            if len(hf_control_devices) > 1:
+                raise ConfigError(f"景点 {attraction.name} 最多只能配置一个 HF 可控设备")
+            if hf_control_devices and "hf" not in attraction.tags:
+                raise ConfigError(f"景点 {attraction.name} 未配置 HF 标签，不能声明 HF 可控设备")
+            has_control_reader = any(
+                reader.device_type == "HF" and reader.hf_purpose == "control"
+                for reader in attraction_readers
+            )
+            if has_control_reader and len(hf_control_devices) != 1:
+                raise ConfigError(
+                    f"景点 {attraction.name} 的控制型 HF Reader 必须对应一个 HF 可控设备"
+                )
+            if hf_control_devices and not has_control_reader:
+                raise ConfigError(
+                    f"景点 {attraction.name} 声明了 HF 可控设备，但没有控制型 HF Reader"
+                )
             for tag in set(attraction.tags) & {"uhf_b", "uhf_c"}:
-                binding = binding_by_tag.get(tag)
-                if binding is None:
+                if binding_by_tag.get(tag) is None:
                     raise ConfigError(f"景点 {attraction.name} 使用 {tag}，但 bindings 中没有对应绑定")
-                if not any(
-                    device.device_type.lower() == binding["device_type"]
-                    for device in attraction_devices
-                ):
-                    raise ConfigError(
-                        f"景点 {attraction.name} 使用 {tag}，但没有 {binding['device_type']} 设备"
-                    )
+                # UHF-B/UHF-C 是手环的全局交互入口。一个景点可以没有与
+                # 当前绑定相匹配的固定设备，用于验证后端的无目标设备分支。
             if attraction.latitude is not None and not -90 <= attraction.latitude <= 90:
                 raise ConfigError(f"景点 {attraction.name} 的 latitude 超出范围")
             if attraction.longitude is not None and not -180 <= attraction.longitude <= 180:
                 raise ConfigError(f"景点 {attraction.name} 的 longitude 超出范围")
+    else:
+        hf_control_devices = [device for device in devices if device.config.get("hf_control") is True]
+        if len(hf_control_devices) > 1:
+            raise ConfigError("单点配置最多只能声明一个 HF 可控设备")
+        if hf_control_devices and "HF" not in reader_types:
+            raise ConfigError("未配置 HF Reader，不能声明 HF 可控设备")
+        has_control_reader = any(
+            reader.device_type == "HF" and reader.hf_purpose == "control"
+            for reader in readers
+        )
+        if has_control_reader and len(hf_control_devices) != 1:
+            raise ConfigError("控制型 HF Reader 必须对应一个 HF 可控设备")
+        if hf_control_devices and not has_control_reader:
+            raise ConfigError("声明了 HF 可控设备，但没有控制型 HF Reader")
 
     app_raw = raw.get("app", {})
     if not isinstance(app_raw, dict):
@@ -390,6 +515,19 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
     if app.token_ttl_seconds <= 0:
         raise ConfigError("app.token_ttl_seconds 必须大于 0")
 
+    ui_raw = raw.get("ui", {})
+    if not isinstance(ui_raw, dict):
+        raise ConfigError("配置项 ui 必须是对象")
+    ui = UiSettings(
+        eyebrow=str(ui_raw.get("eyebrow", UiSettings.eyebrow)),
+        title=str(ui_raw.get("title", UiSettings.title)),
+        description=str(ui_raw.get("description", UiSettings.description)),
+        guide_title=str(ui_raw.get("guide_title", UiSettings.guide_title)),
+        guide_image_path=_resolve_media_path(
+            ui_raw.get("guide_image"), config_path.parent, "ui.guide_image"
+        ),
+    )
+
     provision = raw.get("provision", {})
     scenario = raw.get("scenario", {})
     if not isinstance(provision, dict) or not isinstance(scenario, dict):
@@ -402,6 +540,7 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
         devices=devices,
         attractions=attractions,
         bindings=tuple(bindings),
+        ui=ui,
         app=app,
         provision=dict(provision),
         scenario=dict(scenario),

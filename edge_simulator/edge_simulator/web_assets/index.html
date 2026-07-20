@@ -4,15 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>成都腕带漫游实验台</title>
+  <title>杜甫草堂游踪实验台</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="返回控制台顶部">
-      <span class="brand-mark">蜀</span>
-      <span><strong>成都腕带漫游</strong><small>EDGE LAB / 本地测试台</small></span>
+    <a class="brand" href="#top" aria-label="返回页面顶部">
+      <span class="brand-seal">草堂</span>
+      <span><strong>杜甫草堂游踪实验台</strong><small>RFID EDGE EXPERIENCE</small></span>
     </a>
     <div class="connection-actions">
       <span id="connectionPill" class="status-pill offline"><i></i><span>设备未连接</span></span>
@@ -20,55 +19,94 @@
     </div>
   </header>
 
-  <main>
+  <main id="top">
     <section class="hero">
-      <div>
-        <p class="eyebrow">一只手环，穿行真实成都</p>
-        <h1>点击景点，模拟<br><em>进入与离开</em></h1>
-        <p class="hero-copy">每张景点卡片就是一次真实的边缘感知。首次点击进入，自动触发该点位配置的 UHF、HF 与边缘设备；再次点击离开。</p>
+      <div class="hero-copy-wrap">
+        <p id="heroEyebrow" class="eyebrow">DU FU COTTAGE · RFID EDGE LAB</p>
+        <h1 id="heroTitle">让一只手环，<br>走完一程<em>草堂诗路</em></h1>
+        <p id="heroDescription" class="hero-copy">进入景点自动上报 UHF-A，抬腕、按键、HF 贴卡与环境设备均独立触发。</p>
+        <div class="legend" aria-label="触发方式说明">
+          <span><b>A</b> 自动到访</span>
+          <span><b>B</b> 抬腕 · App 动态绑定</span>
+          <span><b>C</b> 按键 · App 动态绑定</span>
+          <span><b>HF</b> 景点打卡 / 设备确权</span>
+        </div>
       </div>
-      <div class="hero-note">
-        <span>当前所在</span>
-        <strong id="currentAttraction">尚未进入景点</strong>
-        <small id="currentSince">连接设备后开始测试</small>
-      </div>
+      <figure class="guide-card">
+        <div class="guide-head"><span>全景导览</span><small>照片 16 · 现场导览图</small></div>
+        <button id="guideButton" type="button" aria-label="查看大图">
+          <img id="guideImage" alt="杜甫草堂全景导览图">
+          <span>点击查看大图</span>
+        </button>
+        <figcaption id="guideTitle">杜甫草堂全景导览</figcaption>
+      </figure>
     </section>
 
     <section class="metrics" aria-label="测试概况">
-      <article><span>成都景点</span><strong id="attractionCount">—</strong></article>
+      <article><span>草堂路线</span><strong><b id="attractionCount">—</b><small> 站</small></strong></article>
       <article><span>在线节点</span><strong><b id="onlineCount">0</b><small id="nodeCount"> / 0</small></strong></article>
+      <article><span>当前所在</span><strong id="currentAttraction">尚未入场</strong></article>
       <article><span>当前状态</span><strong id="journeyStatus">等待连接</strong></article>
     </section>
 
+    <section class="notice">
+      <b>测试规则</b>
+      <p>每站设备清单固定不变；UHF-B、UHF-C 只读取 App 当前绑定。若绑定到本站没有的设备，仍会上报标签事件，但绝不会临时创建设备。HF 景点打卡与 HF 设备控制使用两个独立按钮。</p>
+    </section>
+
+    <section class="journey-panel" aria-label="HF 打卡兑换进度">
+      <div class="journey-copy">
+        <p>HF CHECK-IN REWARD</p>
+        <h2>草堂八景打卡礼</h2>
+        <span id="journeyHint">完成 80% 景点可兑换礼品；当前为测试平台会话进度。</span>
+      </div>
+      <div class="journey-progress">
+        <div class="progress-meta"><strong id="journeyCount">0 / 8</strong><span id="journeyRequirement">达到 7 / 8 可兑换</span></div>
+        <div class="progress-track"><i id="journeyBar"></i><b id="journeyThreshold" title="80% 门槛"></b></div>
+        <small id="journeyRewardState">尚未达到兑换条件</small>
+      </div>
+      <div class="binding-summary">
+        <span>App 当前绑定</span>
+        <strong id="bindingSummary">正在读取……</strong>
+        <small id="bindingSource">以后台实时配置为准</small>
+      </div>
+      <button id="resetJourney" class="secondary-button" type="button">重置本轮打卡</button>
+    </section>
+
     <div class="workspace">
-      <section class="attractions-section">
+      <section class="route-section">
         <div class="section-heading">
-          <div><p>SCENIC ROUTE</p><h2>选择下一站</h2></div>
-          <span>同一时间只进入一个景点</span>
+          <div><p>SCENIC ROUTE</p><h2>八站草堂游踪</h2></div>
+          <span>建议按序测试，也可直接跳站</span>
         </div>
-        <div id="attractionGrid" class="attraction-grid" aria-live="polite">
-          <div class="loading-card">正在读取景点配置……</div>
+        <div id="attractionGrid" class="route-grid" aria-live="polite">
+          <div class="loading-card">正在读取杜甫草堂测试场景……</div>
         </div>
       </section>
 
       <aside class="activity-panel">
         <div class="section-heading compact">
-          <div><p>LIVE TRACE</p><h2>交互轨迹</h2></div>
+          <div><p>LIVE TRACE</p><h2>设备与打卡轨迹</h2></div>
           <span class="live-dot">实时</span>
         </div>
         <ol id="activityList" class="activity-list">
-          <li class="empty-log">尚无交互记录</li>
+          <li class="empty-log">连接设备并进入第一站后，这里会显示完整链路。</li>
         </ol>
       </aside>
     </div>
 
     <section class="nodes-section">
       <details>
-        <summary><span>查看全部模拟节点</span><small id="nodeSummary">0 个节点</small></summary>
+        <summary><span>查看全部 Reader 与环境设备</span><small id="nodeSummary">0 个节点</small></summary>
         <div id="nodeGrid" class="node-grid"></div>
       </details>
     </section>
   </main>
+
+  <dialog id="guideDialog" class="guide-dialog">
+    <button id="closeGuide" class="dialog-close" type="button" aria-label="关闭导览图">×</button>
+    <img id="guideLarge" alt="杜甫草堂全景导览图大图">
+  </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="/app.js" defer></script>

@@ -200,6 +200,9 @@ class TcpClientTests(unittest.TestCase):
             self.assertIn(b"CAMERA-1", upload["body"])
             self.assertIn(b"99", upload["body"])
             self.assertIn(SIMULATED_JPEG, upload["body"])
+            runtime._wait_for_command_handlers()
+            capture = runtime.capture_records()["CAMERA-1"]
+            self.assertEqual(capture["command_id"], 99)
         finally:
             runtime.close()
             edge_server.close()

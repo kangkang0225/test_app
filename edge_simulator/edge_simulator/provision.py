@@ -29,6 +29,10 @@ class AdminProvisioner:
         "uhf_c": "uhf_c_uid",
         "hf": "hf_uid",
     }
+    INTERACTION_TAG_TYPES = {
+        "uhf_b": "UHF-B",
+        "uhf_c": "UHF-C",
+    }
 
     def __init__(self, config: SimulatorConfig, username: str, password: str, log=None):
         self.config = config
@@ -38,6 +42,35 @@ class AdminProvisioner:
         self.http = BackendHttpClient(config.backend, self.log)
         self.token: str | None = None
         self.actions: list[str] = []
+
+    def _device_config(self, device) -> dict[str, Any]:
+        config = dict(device.config)
+        attraction = next(
+            (item for item in self.config.attractions if item.id == device.attraction_id),
+            None,
+        )
+        available_tags = set(attraction.tags) if attraction else set(self.TAG_FIELDS)
+        # A binding is only the wristband's current/default choice. It must not
+        # narrow the devices that the same on-site interaction tag can select.
+        # Every interactive device at the attraction therefore advertises all
+        # UHF-B/UHF-C tags that are physically present at that attraction.
+        config["interaction_tags"] = sorted(
+            self.INTERACTION_TAG_TYPES[tag]
+            for tag in available_tags
+            if tag in self.INTERACTION_TAG_TYPES
+        )
+        has_hf_control_reader = any(
+            reader.device_type.upper() == "HF"
+            and reader.hf_purpose == "control"
+            and (not attraction or reader.attraction_id == attraction.id)
+            for reader in self.config.readers
+        )
+        # HF is a near-field authorization for one explicitly selected device,
+        # not a blanket permission for every online device at the attraction.
+        config["hf_control"] = (
+            has_hf_control_reader and config.get("hf_control") is True
+        )
+        return config
 
     def login(self) -> None:
         result = self.http.request_json(
@@ -116,6 +149,7 @@ class AdminProvisioner:
                     "device_id": reader.device_id,
                     "spot_id": spot_ids.get(reader.attraction_id or "default", spot_db_id),
                     "device_type": reader.device_type,
+                    "hf_purpose": reader.hf_purpose,
                     "name": reader.name,
                     "status": "offline",
                 },
@@ -131,7 +165,9 @@ class AdminProvisioner:
                     "device_type": device.device_type.lower(),
                     "name": device.name,
                     "status": "offline",
-                    "config_json": json.dumps(device.config, ensure_ascii=False, separators=(",", ":")),
+                    "config_json": json.dumps(
+                        self._device_config(device), ensure_ascii=False, separators=(",", ":")
+                    ),
                 },
             )
 
@@ -187,8 +223,9 @@ class AdminProvisioner:
                 self.actions.append(f"已创建 {binding['tag']} 交互绑定 #{self._row_id(created, 'interaction_bindings')}")
             else:
                 binding_id = self._row_id(row, "interaction_bindings")
-                self._api("PUT", f"/api/admin/tables/interaction_bindings/rows/{binding_id}", values)
-                self.actions.append(f"已更新 {binding['tag']} 交互绑定 #{binding_id}")
+                # App 端可以随时切换 UHF-B/UHF-C 的设备类型。provision 只在
+                # 第一次缺少绑定时写入演示默认值，绝不能覆盖用户当前选择。
+                self.actions.append(f"已保留 {binding['tag']} 当前交互绑定 #{binding_id}")
 
         return ProvisionResult(
             scenic_area_id=area_db_id,

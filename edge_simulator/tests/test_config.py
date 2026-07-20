@@ -17,17 +17,49 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.wristband["uhf_b_uid"], "E200SIM000000000000000B1")
         self.assertTrue(next(device for device in config.devices if device.name == "camera").auto_upload)
 
-    def test_chengdu_web_config_has_eight_valid_attractions(self) -> None:
+    def test_dufu_web_config_has_eight_valid_attractions(self) -> None:
         config = load_config(Path(__file__).parents[1] / "config.web.example.json")
         self.assertEqual(len(config.attractions), 8)
-        self.assertEqual(config.attraction("wuhouci").tags, ("uhf_a",))
         self.assertEqual(
-            config.attraction("qingcheng").tags, ("uhf_a", "uhf_b", "uhf_c", "hf")
+            config.attraction("daxie").tags, ("uhf_a", "uhf_b", "uhf_c", "hf")
         )
         self.assertEqual(
-            config.reader_for_type("HF", "kuanzhai").device_id, "SIM-CD-KUANZHAI-HF"
+            config.attraction("wanfolou").tags, ("uhf_a", "uhf_b", "uhf_c", "hf")
         )
-        self.assertEqual(len(config.nodes_for_attraction("jinsha")), 3)
+        self.assertEqual(
+            config.reader_for_type("HF", "maowu", hf_purpose="control").device_id,
+            "SIM-DUFU-MAOWU-HF",
+        )
+        self.assertEqual(
+            config.reader_for_type("HF", "maowu", hf_purpose="checkin").device_id,
+            "SIM-DUFU-MAOWU-HF-CHECKIN",
+        )
+        self.assertEqual(len(config.nodes_for_attraction("wanfolou")), 6)
+        self.assertEqual(
+            [device.name for device in config.devices
+             if device.attraction_id == "maowu" and device.config.get("hf_control") is True],
+            ["maowu-spray"],
+        )
+        self.assertTrue(config.ui.guide_image_path.is_file())
+        self.assertTrue(next(device for device in config.devices
+                             if device.name == "shaoling-camera").image_path.is_file())
+
+    def test_an_attraction_cannot_expose_multiple_hf_control_devices(self) -> None:
+        source = Path(__file__).parents[1] / "config.web.example.json"
+        raw = json.loads(source.read_text(encoding="utf-8"))
+        raw["ui"]["guide_image"] = str((source.parent / raw["ui"]["guide_image"]).resolve())
+        for attraction in raw["attractions"]:
+            attraction["image"] = str((source.parent / attraction["image"]).resolve())
+        for device in raw["devices"]:
+            if device.get("image"):
+                device["image"] = str((source.parent / device["image"]).resolve())
+        camera = next(device for device in raw["devices"] if device["name"] == "maowu-camera")
+        camera["config"]["hf_control"] = True
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaisesRegex(ConfigError, "最多只能配置一个 HF 可控设备"):
+                load_config(path)
 
     def test_wristband_payload_file_and_camel_case_are_supported(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -48,7 +80,10 @@ class ConfigTests(unittest.TestCase):
                 "wristband": {"payload_file": "wristband.json"},
                 "readers": [
                     {"name": "u", "device_id": "U", "device_type": "UHF"},
-                    {"name": "h", "device_id": "H", "device_type": "HF"},
+                    {
+                        "name": "h", "device_id": "H", "device_type": "HF",
+                        "hf_purpose": "checkin",
+                    },
                 ],
             }
             config_path = root / "config.json"
@@ -73,7 +108,10 @@ class ConfigTests(unittest.TestCase):
                         },
                         "readers": [
                             {"name": "u", "device_id": "DUP", "device_type": "UHF"},
-                            {"name": "h", "device_id": "HF", "device_type": "HF"},
+                            {
+                                "name": "h", "device_id": "HF", "device_type": "HF",
+                                "hf_purpose": "checkin",
+                            },
                         ],
                         "devices": [{"name": "d", "device_id": "DUP", "device_type": "light"}],
                     }
@@ -81,6 +119,19 @@ class ConfigTests(unittest.TestCase):
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ConfigError, "device_id"):
+                load_config(path)
+
+    def test_hf_reader_requires_an_explicit_purpose(self) -> None:
+        source = Path(__file__).parents[1] / "config.example.json"
+        raw = json.loads(source.read_text(encoding="utf-8"))
+        hf_reader = next(
+            reader for reader in raw["readers"] if reader["device_type"] == "HF"
+        )
+        del hf_reader["hf_purpose"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaisesRegex(ConfigError, "hf_purpose"):
                 load_config(path)
 
 

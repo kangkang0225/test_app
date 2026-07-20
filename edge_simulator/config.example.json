@@ -26,7 +26,8 @@
     {
       "name": "hf-reader",
       "device_id": "SIM-HF-READER-001",
-      "device_type": "HF"
+      "device_type": "HF",
+      "hf_purpose": "control"
     }
   ],
   "devices": [
@@ -48,7 +49,8 @@
       "auto_ack": "success",
       "ack_delay_ms": 80,
       "config": {
-        "simulated": true
+        "simulated": true,
+        "hf_control": true
       }
     }
   ],

@@ -7,146 +7,295 @@
     "response_timeout_seconds": 5,
     "heartbeat_interval_seconds": 15
   },
+  "ui": {
+    "eyebrow": "DU FU COTTAGE · RFID EDGE LAB",
+    "title": "杜甫草堂游踪实验台",
+    "description": "沿草堂主线模拟真实游览：进入景点自动完成 UHF-A 到访，UHF-B、UHF-C 与 HF 均由测试员按需触发。",
+    "guide_title": "杜甫草堂全景导览",
+    "guide_image": "media/dufu/guide-map.jpg"
+  },
   "wristband": {
     "version": 1,
     "type": "wristband",
-    "uid": "WB-SIM-CHENGDU-001",
-    "qr_code": "WB-SIM-CHENGDU-001",
-    "uhf_a_uid": "E200CDSIM0000000000000A1",
-    "uhf_b_uid": "E200CDSIM0000000000000B1",
-    "uhf_c_uid": "E200CDSIM0000000000000C1",
-    "hf_uid": "04CDSIM0000001"
+    "uid": "WB-SIM-DUFU-001",
+    "qr_code": "WB-SIM-DUFU-001",
+    "uhf_a_uid": "E200DUFU0000000000000A1",
+    "uhf_b_uid": "E200DUFU0000000000000B1",
+    "uhf_c_uid": "E200DUFU0000000000000C1",
+    "hf_uid": "04DUFU00000001"
   },
   "attractions": [
     {
-      "id": "wuhouci",
-      "name": "武侯祠",
-      "district": "武侯区 · 锦里片区",
-      "description": "红墙竹影之间完成基础到访打卡，只布置位置感知。",
-      "spot_id": "SIM-CD-WUHOUCI",
-      "tags": ["uhf_a"],
-      "simulated_dwell_seconds": 35,
-      "accent": "#A94235",
-      "latitude": 30.6456,
-      "longitude": 104.0431
-    },
-    {
-      "id": "panda",
-      "name": "成都大熊猫繁育研究基地",
-      "district": "成华区 · 熊猫大道",
-      "description": "进入园区后触发 UHF 按键意图，由模拟相机完成游客抓拍。",
-      "spot_id": "SIM-CD-PANDA",
-      "tags": ["uhf_a", "uhf_b"],
-      "simulated_dwell_seconds": 42,
-      "accent": "#48745C",
-      "latitude": 30.7381,
-      "longitude": 104.1456
-    },
-    {
-      "id": "dufu",
-      "name": "杜甫草堂",
-      "district": "青羊区 · 浣花溪",
-      "description": "位置打卡叠加 UHF 手势交互，点亮一组诗意环境灯光。",
-      "spot_id": "SIM-CD-DUFU",
-      "tags": ["uhf_a", "uhf_c"],
-      "simulated_dwell_seconds": 38,
-      "accent": "#56715A",
-      "latitude": 30.6604,
-      "longitude": 104.0287
-    },
-    {
-      "id": "jinsha",
-      "name": "金沙遗址博物馆",
-      "district": "青羊区 · 金沙片区",
-      "description": "同时验证相机抓拍与环境灯光，是 UHF 多设备组合测试点。",
-      "spot_id": "SIM-CD-JINSHA",
-      "tags": ["uhf_a", "uhf_b", "uhf_c"],
-      "simulated_dwell_seconds": 45,
-      "accent": "#B9852E",
-      "latitude": 30.6809,
-      "longitude": 104.0126
-    },
-    {
-      "id": "kuanzhai",
-      "name": "宽窄巷子",
-      "district": "青羊区 · 少城片区",
-      "description": "UHF 到访后通过 HF 完成近场确权，可继续测试现场灯光控制。",
-      "spot_id": "SIM-CD-KUANZHAI",
-      "tags": ["uhf_a", "hf"],
-      "simulated_dwell_seconds": 35,
-      "accent": "#8A5C42",
-      "latitude": 30.6694,
-      "longitude": 104.0551
-    },
-    {
-      "id": "qingcheng",
-      "name": "青城山",
-      "district": "都江堰市 · 青城山镇",
-      "description": "四标签全链路点位，集中验证到访、抓拍、灯光和 HF 近场授权。",
-      "spot_id": "SIM-CD-QINGCHENG",
+      "id": "daxie",
+      "name": "大廨",
+      "district": "草堂中轴 · 第一站",
+      "description": "本站只安装 UHF/HF Reader，没有环境设备；可验证绑定目标不存在时后端不会凭空创建设备。",
+      "spot_id": "SIM-DUFU-DAXIE",
       "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
-      "simulated_dwell_seconds": 52,
-      "accent": "#245B48",
-      "latitude": 30.8992,
-      "longitude": 103.5704
-    },
-    {
-      "id": "dujiangyan",
-      "name": "都江堰景区",
-      "district": "都江堰市 · 灌口街道",
-      "description": "基础到访结合相机抓拍，验证跨城区点位的设备路由。",
-      "spot_id": "SIM-CD-DUJIANGYAN",
-      "tags": ["uhf_a", "uhf_b"],
-      "simulated_dwell_seconds": 48,
-      "accent": "#39718A",
-      "latitude": 31.0037,
-      "longitude": 103.6192
-    },
-    {
-      "id": "taikooli",
-      "name": "春熙路·太古里",
-      "district": "锦江区 · 春熙路商圈",
-      "description": "UHF 手势灯光与 HF 近场控制组合，模拟城市夜游互动。",
-      "spot_id": "SIM-CD-TAIKOOLI",
-      "tags": ["uhf_a", "uhf_c", "hf"],
       "simulated_dwell_seconds": 35,
-      "accent": "#A84D54",
-      "latitude": 30.6534,
-      "longitude": 104.0821
+      "accent": "#8A4B35",
+      "latitude": 30.66005,
+      "longitude": 104.02895,
+      "image": "media/dufu/01-daxie.jpg"
+    },
+    {
+      "id": "shishitang",
+      "name": "诗史堂",
+      "district": "草堂中轴 · 第二站",
+      "description": "本站固定安装一台留影相机；只有 App 当前绑定相机时，UHF-B 或 UHF-C 才会触发抓拍。",
+      "spot_id": "SIM-DUFU-SHISHITANG",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 38,
+      "accent": "#A33D35",
+      "latitude": 30.66016,
+      "longitude": 104.02882,
+      "image": "media/dufu/02-shishitang.jpg"
+    },
+    {
+      "id": "chaimen",
+      "name": "柴门",
+      "district": "草堂中轴 · 第三站",
+      "description": "本站固定安装门廊灯光；腕带绑定灯光时可触发，HF 控制确权后还能开关和调节亮度。",
+      "spot_id": "SIM-DUFU-CHAIMEN",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 36,
+      "accent": "#6D5336",
+      "latitude": 30.66025,
+      "longitude": 104.0287,
+      "image": "media/dufu/03-chaimen.jpg"
+    },
+    {
+      "id": "gongbuci",
+      "name": "工部祠",
+      "district": "草堂中轴 · 第四站",
+      "description": "本站只设置游览打卡 Reader，不安装环境设备，专门验证 HF 景点打卡与重复去重。",
+      "spot_id": "SIM-DUFU-GONGBUCI",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 42,
+      "accent": "#7E5A32",
+      "latitude": 30.66036,
+      "longitude": 104.02858,
+      "image": "media/dufu/04-gongbuci.jpg"
+    },
+    {
+      "id": "shaoling",
+      "name": "少陵草堂碑亭",
+      "district": "茅屋景区 · 第五站",
+      "description": "本站固定安装碑亭留影相机；相机收到当前 B/C 绑定下发的拍照命令后才显示预埋照片。",
+      "spot_id": "SIM-DUFU-SHAOLING",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 40,
+      "accent": "#4F6948",
+      "latitude": 30.66055,
+      "longitude": 104.02822,
+      "image": "media/dufu/05-shaoling.jpg"
+    },
+    {
+      "id": "maowu",
+      "name": "茅屋故居",
+      "district": "茅屋景区 · 第六站",
+      "description": "本站固定安装相机和竹林喷雾；UHF 按 App 绑定选择目标，HF 控制只操作既有喷雾。",
+      "spot_id": "SIM-DUFU-MAOWU",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 48,
+      "accent": "#7A6337",
+      "latitude": 30.66062,
+      "longitude": 104.02805,
+      "image": "media/dufu/06-maowu.jpg"
+    },
+    {
+      "id": "shuijian",
+      "name": "水槛·杜甫千诗碑",
+      "district": "园林水景 · 第七站",
+      "description": "本站固定安装水岸灯光和雾幕；UHF 动态选择已安装类型，HF 控制授权后可启停雾幕。",
+      "spot_id": "SIM-DUFU-SHUIJIAN",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 44,
+      "accent": "#3F6F65",
+      "latitude": 30.66078,
+      "longitude": 104.0284,
+      "image": "media/dufu/07-shuijian.jpg"
+    },
+    {
+      "id": "wanfolou",
+      "name": "万佛楼",
+      "district": "东部园区 · 第八站",
+      "description": "本站固定安装相机、轮廓灯和诗歌音响；B/C 绑定只选择现有设备，HF 可调节音响音量。",
+      "spot_id": "SIM-DUFU-WANFOLOU",
+      "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
+      "simulated_dwell_seconds": 50,
+      "accent": "#9B3C2F",
+      "latitude": 30.66073,
+      "longitude": 104.02912,
+      "image": "media/dufu/08-wanfolou.jpg"
     }
   ],
   "readers": [
-    {"name": "wuhouci-uhf", "device_id": "SIM-CD-WUHOUCI-UHF", "device_type": "UHF", "attraction": "wuhouci"},
-    {"name": "panda-uhf", "device_id": "SIM-CD-PANDA-UHF", "device_type": "UHF", "attraction": "panda"},
-    {"name": "dufu-uhf", "device_id": "SIM-CD-DUFU-UHF", "device_type": "UHF", "attraction": "dufu"},
-    {"name": "jinsha-uhf", "device_id": "SIM-CD-JINSHA-UHF", "device_type": "UHF", "attraction": "jinsha"},
-    {"name": "kuanzhai-uhf", "device_id": "SIM-CD-KUANZHAI-UHF", "device_type": "UHF", "attraction": "kuanzhai"},
-    {"name": "kuanzhai-hf", "device_id": "SIM-CD-KUANZHAI-HF", "device_type": "HF", "attraction": "kuanzhai"},
-    {"name": "qingcheng-uhf", "device_id": "SIM-CD-QINGCHENG-UHF", "device_type": "UHF", "attraction": "qingcheng"},
-    {"name": "qingcheng-hf", "device_id": "SIM-CD-QINGCHENG-HF", "device_type": "HF", "attraction": "qingcheng"},
-    {"name": "dujiangyan-uhf", "device_id": "SIM-CD-DUJIANGYAN-UHF", "device_type": "UHF", "attraction": "dujiangyan"},
-    {"name": "taikooli-uhf", "device_id": "SIM-CD-TAIKOOLI-UHF", "device_type": "UHF", "attraction": "taikooli"},
-    {"name": "taikooli-hf", "device_id": "SIM-CD-TAIKOOLI-HF", "device_type": "HF", "attraction": "taikooli"}
+    {"name": "daxie-uhf", "device_id": "SIM-DUFU-DAXIE-UHF", "device_type": "UHF", "attraction": "daxie"},
+    {"name": "daxie-hf", "device_id": "SIM-DUFU-DAXIE-HF", "device_type": "HF", "hf_purpose": "checkin", "attraction": "daxie"},
+    {"name": "shishitang-uhf", "device_id": "SIM-DUFU-SHISHITANG-UHF", "device_type": "UHF", "attraction": "shishitang"},
+    {"name": "shishitang-hf", "device_id": "SIM-DUFU-SHISHITANG-HF", "device_type": "HF", "hf_purpose": "checkin", "attraction": "shishitang"},
+    {"name": "chaimen-uhf", "device_id": "SIM-DUFU-CHAIMEN-UHF", "device_type": "UHF", "attraction": "chaimen"},
+    {"name": "chaimen-hf-checkin", "device_id": "SIM-DUFU-CHAIMEN-HF-CHECKIN", "device_type": "HF", "hf_purpose": "checkin", "attraction": "chaimen"},
+    {"name": "chaimen-hf-control", "device_id": "SIM-DUFU-CHAIMEN-HF", "device_type": "HF", "hf_purpose": "control", "attraction": "chaimen"},
+    {"name": "gongbuci-uhf", "device_id": "SIM-DUFU-GONGBUCI-UHF", "device_type": "UHF", "attraction": "gongbuci"},
+    {"name": "gongbuci-hf", "device_id": "SIM-DUFU-GONGBUCI-HF", "device_type": "HF", "hf_purpose": "checkin", "attraction": "gongbuci"},
+    {"name": "shaoling-uhf", "device_id": "SIM-DUFU-SHAOLING-UHF", "device_type": "UHF", "attraction": "shaoling"},
+    {"name": "shaoling-hf", "device_id": "SIM-DUFU-SHAOLING-HF", "device_type": "HF", "hf_purpose": "checkin", "attraction": "shaoling"},
+    {"name": "maowu-uhf", "device_id": "SIM-DUFU-MAOWU-UHF", "device_type": "UHF", "attraction": "maowu"},
+    {"name": "maowu-hf-checkin", "device_id": "SIM-DUFU-MAOWU-HF-CHECKIN", "device_type": "HF", "hf_purpose": "checkin", "attraction": "maowu"},
+    {"name": "maowu-hf-control", "device_id": "SIM-DUFU-MAOWU-HF", "device_type": "HF", "hf_purpose": "control", "attraction": "maowu"},
+    {"name": "shuijian-uhf", "device_id": "SIM-DUFU-SHUIJIAN-UHF", "device_type": "UHF", "attraction": "shuijian"},
+    {"name": "shuijian-hf-checkin", "device_id": "SIM-DUFU-SHUIJIAN-HF-CHECKIN", "device_type": "HF", "hf_purpose": "checkin", "attraction": "shuijian"},
+    {"name": "shuijian-hf-control", "device_id": "SIM-DUFU-SHUIJIAN-HF", "device_type": "HF", "hf_purpose": "control", "attraction": "shuijian"},
+    {"name": "wanfolou-uhf", "device_id": "SIM-DUFU-WANFOLOU-UHF", "device_type": "UHF", "attraction": "wanfolou"},
+    {"name": "wanfolou-hf-checkin", "device_id": "SIM-DUFU-WANFOLOU-HF-CHECKIN", "device_type": "HF", "hf_purpose": "checkin", "attraction": "wanfolou"},
+    {"name": "wanfolou-hf-control", "device_id": "SIM-DUFU-WANFOLOU-HF", "device_type": "HF", "hf_purpose": "control", "attraction": "wanfolou"}
   ],
   "devices": [
-    {"name": "panda-camera", "device_id": "SIM-CD-PANDA-CAMERA", "device_type": "camera", "attraction": "panda", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "熊猫园区抓拍相机", "simulated": true}},
-    {"name": "dufu-light", "device_id": "SIM-CD-DUFU-LIGHT", "device_type": "light", "attraction": "dufu", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "草堂诗意灯光", "simulated": true}},
-    {"name": "jinsha-camera", "device_id": "SIM-CD-JINSHA-CAMERA", "device_type": "camera", "attraction": "jinsha", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "太阳神鸟抓拍相机", "simulated": true}},
-    {"name": "jinsha-light", "device_id": "SIM-CD-JINSHA-LIGHT", "device_type": "light", "attraction": "jinsha", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "遗址环境灯光", "simulated": true}},
-    {"name": "kuanzhai-light", "device_id": "SIM-CD-KUANZHAI-LIGHT", "device_type": "light", "attraction": "kuanzhai", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "院落近场灯光", "simulated": true}},
-    {"name": "qingcheng-camera", "device_id": "SIM-CD-QINGCHENG-CAMERA", "device_type": "camera", "attraction": "qingcheng", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "山门抓拍相机", "simulated": true}},
-    {"name": "qingcheng-light", "device_id": "SIM-CD-QINGCHENG-LIGHT", "device_type": "light", "attraction": "qingcheng", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "林间互动灯光", "simulated": true}},
-    {"name": "dujiangyan-camera", "device_id": "SIM-CD-DUJIANGYAN-CAMERA", "device_type": "camera", "attraction": "dujiangyan", "auto_ack": "success", "ack_delay_ms": 120, "auto_upload": true, "config": {"label": "水利景观抓拍相机", "simulated": true}},
-    {"name": "taikooli-light", "device_id": "SIM-CD-TAIKOOLI-LIGHT", "device_type": "light", "attraction": "taikooli", "auto_ack": "success", "ack_delay_ms": 80, "config": {"label": "夜游互动灯光", "simulated": true}}
+    {
+      "name": "shishitang-camera",
+      "device_id": "SIM-DUFU-SHISHITANG-CAMERA",
+      "device_type": "camera",
+      "attraction": "shishitang",
+      "auto_ack": "success",
+      "ack_delay_ms": 120,
+      "auto_upload": true,
+      "image": "media/dufu/02-shishitang.jpg",
+      "config": {"label": "诗史堂留影相机", "simulated": true}
+    },
+    {
+      "name": "chaimen-light",
+      "device_id": "SIM-DUFU-CHAIMEN-LIGHT",
+      "device_type": "light",
+      "attraction": "chaimen",
+      "auto_ack": "success",
+      "ack_delay_ms": 80,
+      "config": {
+        "label": "柴门诗意灯光",
+        "simulated": true,
+        "default_brightness": 45,
+        "hf_control": true,
+        "controls": [
+          {"id": "light-on", "label": "点亮门廊", "action": "on"},
+          {"id": "light-warm", "label": "亮度调至 72%", "action": "adjust", "params": {"brightness": 72}},
+          {"id": "light-off", "label": "关闭灯光", "action": "off"}
+        ]
+      }
+    },
+    {
+      "name": "shaoling-camera",
+      "device_id": "SIM-DUFU-SHAOLING-CAMERA",
+      "device_type": "camera",
+      "attraction": "shaoling",
+      "auto_ack": "success",
+      "ack_delay_ms": 120,
+      "auto_upload": true,
+      "image": "media/dufu/05-shaoling.jpg",
+      "config": {"label": "少陵碑亭留影相机", "simulated": true}
+    },
+    {
+      "name": "maowu-camera",
+      "device_id": "SIM-DUFU-MAOWU-CAMERA",
+      "device_type": "camera",
+      "attraction": "maowu",
+      "auto_ack": "success",
+      "ack_delay_ms": 120,
+      "auto_upload": true,
+      "image": "media/dufu/06-maowu.jpg",
+      "config": {"label": "茅屋故居留影相机", "simulated": true}
+    },
+    {
+      "name": "maowu-spray",
+      "device_id": "SIM-DUFU-MAOWU-SPRAY",
+      "device_type": "spray",
+      "attraction": "maowu",
+      "auto_ack": "success",
+      "ack_delay_ms": 90,
+      "config": {
+        "label": "茅屋竹林喷雾",
+        "simulated": true,
+        "hf_control": true,
+        "controls": [
+          {"id": "spray-on", "label": "开启喷雾", "action": "on"},
+          {"id": "spray-off", "label": "关闭喷雾", "action": "off"}
+        ]
+      }
+    },
+    {
+      "name": "shuijian-light",
+      "device_id": "SIM-DUFU-SHUIJIAN-LIGHT",
+      "device_type": "light",
+      "attraction": "shuijian",
+      "auto_ack": "success",
+      "ack_delay_ms": 80,
+      "config": {"label": "水槛氛围灯", "simulated": true, "default_brightness": 58}
+    },
+    {
+      "name": "shuijian-fog",
+      "device_id": "SIM-DUFU-SHUIJIAN-FOG",
+      "device_type": "fog",
+      "attraction": "shuijian",
+      "auto_ack": "success",
+      "ack_delay_ms": 90,
+      "config": {
+        "label": "竹林水景雾幕",
+        "simulated": true,
+        "hf_control": true,
+        "controls": [
+          {"id": "fog-on", "label": "升起雾幕", "action": "on"},
+          {"id": "fog-off", "label": "收起雾幕", "action": "off"}
+        ]
+      }
+    },
+    {
+      "name": "wanfolou-camera",
+      "device_id": "SIM-DUFU-WANFOLOU-CAMERA",
+      "device_type": "camera",
+      "attraction": "wanfolou",
+      "auto_ack": "success",
+      "ack_delay_ms": 120,
+      "auto_upload": true,
+      "image": "media/dufu/08-wanfolou.jpg",
+      "config": {"label": "万佛楼仰拍相机", "simulated": true}
+    },
+    {
+      "name": "wanfolou-light",
+      "device_id": "SIM-DUFU-WANFOLOU-LIGHT",
+      "device_type": "light",
+      "attraction": "wanfolou",
+      "auto_ack": "success",
+      "ack_delay_ms": 80,
+      "config": {"label": "万佛楼轮廓灯", "simulated": true, "default_brightness": 60}
+    },
+    {
+      "name": "wanfolou-speaker",
+      "device_id": "SIM-DUFU-WANFOLOU-SPEAKER",
+      "device_type": "speaker",
+      "attraction": "wanfolou",
+      "auto_ack": "success",
+      "ack_delay_ms": 90,
+      "config": {
+        "label": "万佛楼诗歌音响",
+        "simulated": true,
+        "default_volume": 45,
+        "hf_control": true,
+        "controls": [
+          {"id": "speaker-on", "label": "播放杜诗", "action": "on"},
+          {"id": "speaker-volume", "label": "音量调至 55%", "action": "adjust", "params": {"volume": 55}},
+          {"id": "speaker-off", "label": "停止播放", "action": "off"}
+        ]
+      }
+    }
   ],
   "bindings": [
     {"tag": "uhf_b", "device_type": "camera", "action": "capture", "params_template": {"mode": "photo"}},
-    {"tag": "uhf_c", "device_type": "light", "action": "on", "params_template": {"color": "warm"}}
+    {"tag": "uhf_c", "device_type": "light", "action": "on", "params_template": {}}
   ],
   "app": {
     "token_env": "SIM_APP_TOKEN",
     "jwt_secret_env": "SIM_JWT_SECRET",
-    "user_id": 1,
+    "user_id": 2,
     "jwt_algorithm": "auto",
     "token_ttl_seconds": 3600
   },
@@ -154,12 +303,12 @@
     "admin_username_env": "SIM_ADMIN_USERNAME",
     "admin_password_env": "SIM_ADMIN_PASSWORD",
     "admin_username": "admin",
-    "user_id": 1,
+    "user_id": 2,
     "scenic_area": {
-      "area_id": "SIM-CHENGDU-ROUTE",
-      "name": "成都腕带漫游模拟线路",
-      "region": "成都市",
-      "description": "边缘设备模拟器的成都多景点测试数据",
+      "area_id": "SIM-DUFU-COTTAGE",
+      "name": "成都杜甫草堂博物馆",
+      "region": "成都市青羊区",
+      "description": "杜甫草堂八景点 RFID 游玩打卡与环境设备联动测试数据",
       "status": "active"
     }
   }

@@ -12,6 +12,7 @@ from typing import Any
 from .clients import ApiError, BackendHttpClient, TcpNode
 from .config import ConfigError, NodeSettings, SimulatorConfig
 from .protocol import command_ack_body, create_app_jwt, event_batch_body
+from .protocol import SIMULATED_JPEG
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,8 @@ class SimulatorRuntime:
         self._ack_modes = {item.device_id: item.auto_ack for item in config.devices}
         self._command_threads: set[threading.Thread] = set()
         self._command_lock = threading.Lock()
+        self._capture_lock = threading.Lock()
+        self._captures: dict[str, dict[str, Any]] = {}
 
     def connect_all(self) -> None:
         connected: list[TcpNode] = []
@@ -131,13 +134,22 @@ class SimulatorRuntime:
         *,
         rssi: int = -45,
         attraction_id: str | None = None,
+        hf_purpose: str | None = None,
         event_time: datetime | None = None,
+        event_type: str | None = None,
     ) -> dict[str, Any]:
         normalized = self._normalize_tag_name(tag_name)
         reader_type = "HF" if normalized == "hf" else "UHF"
+        if hf_purpose is not None and normalized != "hf":
+            raise ValueError("只有 HF 标签可以指定 hf_purpose")
         current = event_time or datetime.now().astimezone()
         return self._send_events(
-            normalized, [(current, rssi)], reader_type, attraction_id=attraction_id
+            normalized,
+            [(current, rssi)],
+            reader_type,
+            attraction_id=attraction_id,
+            hf_purpose=hf_purpose,
+            event_type=event_type,
         )
 
     def simulate_dwell(
@@ -170,8 +182,14 @@ class SimulatorRuntime:
         reader_type: str,
         *,
         attraction_id: str | None = None,
+        hf_purpose: str | None = None,
+        event_type: str | None = None,
     ) -> dict[str, Any]:
-        reader_config = self.config.reader_for_type(reader_type, attraction_id)
+        reader_config = self.config.reader_for_type(
+            reader_type,
+            attraction_id,
+            hf_purpose=hf_purpose,
+        )
         reader = self.readers[reader_config.name]
         if not reader.is_connected:
             raise ConnectionError(f"读写器 {reader.device_id} 离线")
@@ -179,6 +197,7 @@ class SimulatorRuntime:
         body = event_batch_body(
             reader.device_id,
             [(tag_uid, event_time, rssi) for event_time, rssi in samples],
+            event_type=event_type,
         )
         response = reader.request(
             "/api/edge/event-batches", body, {"batch_ack"}, timeout=self.config.backend.response_timeout_seconds
@@ -186,7 +205,8 @@ class SimulatorRuntime:
         self.logs.add(
             "INFO",
             reader.device_id,
-            f"腕带标签 {tag_name.upper()} 已上报（{len(samples)} 条事件）",
+            f"腕带标签 {tag_name.upper()} 已上报"
+            f"（{len(samples)} 条事件{f'，{event_type}' if event_type else ''}）",
             response.get("body"),
         )
         return response
@@ -215,6 +235,24 @@ class SimulatorRuntime:
         if not isinstance(result, dict):
             raise ApiError("当前控制权限接口返回格式异常", payload=result)
         return result
+
+    def interaction_bindings(self) -> list[dict[str, Any]]:
+        """Read the App's current UHF-B/UHF-C choices without mutating them."""
+        token = self.app_token()
+        if not token:
+            raise ConfigError(f"缺少 App JWT：请设置 {self.config.app.token_env}")
+        result = self.http.request_json(
+            "GET",
+            "/api/app/interaction-bindings",
+            token=token,
+        )
+        if not isinstance(result, list):
+            raise ApiError("互动绑定接口返回格式异常", payload=result)
+        return [dict(item) for item in result if isinstance(item, dict)]
+
+    def capture_records(self) -> dict[str, dict[str, Any]]:
+        with self._capture_lock:
+            return {device_id: dict(record) for device_id, record in self._captures.items()}
 
     def send_control_command(
         self,
@@ -254,7 +292,11 @@ class SimulatorRuntime:
         node = self._find_device(name_or_id)
         if node.settings.device_type != "CAMERA":
             raise ValueError(f"{node.device_id} 不是 camera 类型设备")
-        result = self.http.upload_camera(node.device_id, int(command_id))
+        result = self.http.upload_camera(
+            node.device_id,
+            int(command_id),
+            image=self._camera_image(node.settings),
+        )
         self.logs.add("INFO", node.device_id, f"命令 #{command_id} 的模拟图片手动上传成功", result)
         return result
 
@@ -356,7 +398,22 @@ class SimulatorRuntime:
                         f"跳过命令 #{command_id} 的图片上传：现有后端只关联 UHF 命令记录",
                     )
                 else:
-                    result = self.http.upload_camera(node.device_id, command_id)
+                    result = self.http.upload_camera(
+                        node.device_id,
+                        command_id,
+                        image=self._camera_image(node.settings),
+                    )
+                    with self._capture_lock:
+                        self._captures[node.device_id] = {
+                            "device_id": node.device_id,
+                            "command_id": command_id,
+                            "captured_at": datetime.now().astimezone().isoformat(),
+                            "file_name": (
+                                node.settings.image_path.name
+                                if node.settings.image_path is not None
+                                else f"simulated-{node.device_id}.jpg"
+                            ),
+                        }
                     self.logs.add("INFO", node.device_id, f"命令 #{command_id} 的模拟图片上传成功", result)
         except Exception as exc:
             self.logs.add("ERROR", node.device_id, f"处理设备命令失败：{exc}", body)
@@ -374,6 +431,22 @@ class SimulatorRuntime:
                 return
             for thread in threads:
                 thread.join(timeout=0.1)
+
+    def _camera_image(self, settings: NodeSettings) -> bytes:
+        if settings.image_path is None:
+            return SIMULATED_JPEG
+        try:
+            image = settings.image_path.read_bytes()
+        except OSError as exc:
+            raise ConfigError(f"无法读取相机预埋照片 {settings.image_path}：{exc}") from exc
+        if not image:
+            raise ConfigError(f"相机预埋照片为空：{settings.image_path}")
+        self.logs.add(
+            "INFO",
+            settings.device_id,
+            f"使用预埋照片模拟拍摄：{settings.image_path.name}",
+        )
+        return image
 
     def _find_node(self, name_or_id: str) -> TcpNode:
         key = name_or_id.lower()

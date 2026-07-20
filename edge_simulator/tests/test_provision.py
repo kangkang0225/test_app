@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -11,7 +12,10 @@ from edge_simulator.provision import AdminProvisioner
 class FakeAdminApi:
     def __init__(self):
         self.tables: dict[str, list[dict]] = {
-            "users": [{"id": 1, "openid": "sim-user"}],
+            "users": [
+                {"id": 1, "openid": "sim-user"},
+                {"id": 2, "openid": "dufu-app-user"},
+            ],
             "scenic_areas": [],
             "spots": [],
             "readers": [],
@@ -88,6 +92,13 @@ class ProvisionTests(unittest.TestCase):
         first.http = fake
         first_result = first.provision()
 
+        # 模拟用户已经在 App 中切换 UHF-B，第二次 provision 必须保留它。
+        uhf_b_tag_id = first_result.tag_ids["uhf_b"]
+        next(
+            row for row in fake.tables["interaction_bindings"]
+            if row["tag_id"] == uhf_b_tag_id
+        )["device_type"] = "light"
+
         second = AdminProvisioner(config, "admin", "secret")
         second.http = fake
         second_result = second.provision()
@@ -97,12 +108,28 @@ class ProvisionTests(unittest.TestCase):
         self.assertEqual(len(fake.tables["scenic_areas"]), 1)
         self.assertEqual(len(fake.tables["spots"]), 1)
         self.assertEqual(len(fake.tables["readers"]), 2)
+        self.assertEqual(
+            next(row for row in fake.tables["readers"] if row["device_type"] == "HF")["hf_purpose"],
+            "control",
+        )
         self.assertEqual(len(fake.tables["devices"]), 2)
         self.assertEqual(len(fake.tables["wristbands"]), 1)
         self.assertEqual(len(fake.tables["tags"]), 4)
         self.assertEqual(len(fake.tables["interaction_bindings"]), 2)
+        self.assertEqual(
+            next(
+                row for row in fake.tables["interaction_bindings"]
+                if row["tag_id"] == uhf_b_tag_id
+            )["device_type"],
+            "light",
+        )
         self.assertEqual(fake.tables["wristbands"][0]["owner_id"], 1)
         self.assertEqual({row["device_type"] for row in fake.tables["devices"]}, {"camera", "light"})
+        single_point_hf_devices = [
+            row for row in fake.tables["devices"]
+            if json.loads(row["config_json"])["hf_control"]
+        ]
+        self.assertEqual([row["device_id"] for row in single_point_hf_devices], ["SIM-LIGHT-001"])
         self.assertEqual(set(first_result.tag_ids), {"uhf_a", "uhf_b", "uhf_c", "hf"})
 
     def test_multi_attraction_provision_assigns_nodes_to_eight_spots(self) -> None:
@@ -114,16 +141,54 @@ class ProvisionTests(unittest.TestCase):
 
         self.assertEqual(len(result.spot_ids), 8)
         self.assertEqual(len(fake.tables["spots"]), 8)
-        self.assertEqual(len(fake.tables["readers"]), 11)
-        self.assertEqual(len(fake.tables["devices"]), 9)
-        panda_spot = result.spot_ids["panda"]
-        panda_nodes = [
+        self.assertEqual(len(fake.tables["readers"]), 20)
+        hf_purposes = {
+            row["device_id"]: row["hf_purpose"]
+            for row in fake.tables["readers"]
+            if row["device_type"] == "HF"
+        }
+        self.assertEqual(hf_purposes["SIM-DUFU-GONGBUCI-HF"], "checkin")
+        self.assertEqual(hf_purposes["SIM-DUFU-CHAIMEN-HF-CHECKIN"], "checkin")
+        self.assertEqual(hf_purposes["SIM-DUFU-MAOWU-HF"], "control")
+        self.assertEqual(len(fake.tables["devices"]), 10)
+        shishitang_spot = result.spot_ids["shishitang"]
+        shishitang_nodes = [
             row for row in fake.tables["readers"] + fake.tables["devices"]
-            if row["spot_id"] == panda_spot
+            if row["spot_id"] == shishitang_spot
         ]
-        self.assertEqual({row["device_id"] for row in panda_nodes}, {
-            "SIM-CD-PANDA-UHF", "SIM-CD-PANDA-CAMERA"
+        self.assertEqual({row["device_id"] for row in shishitang_nodes}, {
+            "SIM-DUFU-SHISHITANG-UHF",
+            "SIM-DUFU-SHISHITANG-HF",
+            "SIM-DUFU-SHISHITANG-CAMERA",
         })
+        shishitang_camera = next(
+            row for row in fake.tables["devices"]
+            if row["device_id"] == "SIM-DUFU-SHISHITANG-CAMERA"
+        )
+        maowu_spray = next(
+            row for row in fake.tables["devices"]
+            if row["device_id"] == "SIM-DUFU-MAOWU-SPRAY"
+        )
+        wanfolou_speaker = next(
+            row for row in fake.tables["devices"]
+            if row["device_id"] == "SIM-DUFU-WANFOLOU-SPEAKER"
+        )
+        wanfolou_devices = [
+            row for row in fake.tables["devices"]
+            if row["spot_id"] == result.spot_ids["wanfolou"]
+        ]
+        self.assertEqual(json.loads(shishitang_camera["config_json"])["interaction_tags"], ["UHF-B", "UHF-C"])
+        self.assertEqual(json.loads(maowu_spray["config_json"])["interaction_tags"], ["UHF-B", "UHF-C"])
+        self.assertTrue(json.loads(maowu_spray["config_json"])["hf_control"])
+        self.assertTrue(json.loads(wanfolou_speaker["config_json"])["hf_control"])
+        self.assertEqual(
+            {row["device_type"] for row in wanfolou_devices},
+            {"camera", "light", "speaker"},
+        )
+        self.assertTrue(all(
+            json.loads(row["config_json"])["interaction_tags"] == ["UHF-B", "UHF-C"]
+            for row in wanfolou_devices
+        ))
 
 
 if __name__ == "__main__":
