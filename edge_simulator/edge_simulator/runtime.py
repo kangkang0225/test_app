@@ -11,7 +11,7 @@ from typing import Any
 
 from .clients import ApiError, BackendHttpClient, TcpNode
 from .config import ConfigError, NodeSettings, SimulatorConfig
-from .protocol import command_ack_body, create_app_jwt, event_batch_body
+from .protocol import command_ack_body, create_app_jwt, event_batch_body, hf_control_ack_body
 from .protocol import SIMULATED_JPEG
 
 
@@ -77,6 +77,9 @@ class SimulatorRuntime:
         self._ack_modes = {item.device_id: item.auto_ack for item in config.devices}
         self._command_threads: set[threading.Thread] = set()
         self._command_lock = threading.Lock()
+        self._hf_control_lock = threading.Lock()
+        self._hf_control_active: set[str] = set()
+        self._hf_control_timers: dict[str, threading.Timer] = {}
         self._capture_lock = threading.Lock()
         self._captures: dict[str, dict[str, Any]] = {}
 
@@ -101,6 +104,12 @@ class SimulatorRuntime:
 
     def close(self) -> None:
         self._wait_for_command_handlers()
+        with self._hf_control_lock:
+            timers = list(self._hf_control_timers.values())
+            self._hf_control_timers.clear()
+            self._hf_control_active.clear()
+        for timer in timers:
+            timer.cancel()
         for node in [*self.readers.values(), *self.devices.values()]:
             node.close()
         with self._command_lock:
@@ -145,7 +154,7 @@ class SimulatorRuntime:
         current = event_time or datetime.now().astimezone()
         return self._send_events(
             normalized,
-            [(current, rssi)],
+            [(current, None if normalized == "hf" else rssi)],
             reader_type,
             attraction_id=attraction_id,
             hf_purpose=hf_purpose,
@@ -342,20 +351,24 @@ class SimulatorRuntime:
         return rows
 
     def _on_message(self, node: TcpNode, message: dict[str, Any]) -> None:
-        if message.get("type") != "command":
+        message_type = message.get("type")
+        if message_type not in {"command", "hf_control_start", "hf_control_end"}:
             return
         body = message.get("body")
         if not isinstance(body, dict):
             self.logs.add("ERROR", node.device_id, "下行 command 的 body 不是对象", message)
             return
         target = str(body.get("device_id", ""))
-        if target and target != node.device_id:
+        if message_type == "command" and target and target != node.device_id:
             self.logs.add("WARN", node.device_id, f"收到发给其他设备的命令：{target}", body)
             return
+        handler = self._handle_command if message_type == "command" else self._handle_hf_control_lifecycle
+        args = (node, body) if message_type == "command" else (node, message_type, body)
+        suffix = body.get("command_id") if message_type == "command" else message_type
         thread = threading.Thread(
-            target=self._handle_command,
-            args=(node, body),
-            name=f"sim-command-{node.device_id}-{body.get('command_id')}",
+            target=handler,
+            args=args,
+            name=f"sim-message-{node.device_id}-{suffix}",
             daemon=True,
         )
         with self._command_lock:
@@ -374,14 +387,32 @@ class SimulatorRuntime:
             if mode == "none":
                 self.logs.add("WARN", node.device_id, f"按配置忽略命令 #{command_id}，用于测试 ACK 超时")
                 return
+            protected_uhf_capture = (
+                command_type == "UHF"
+                and action == "capture"
+                and node.settings.config.get("uhf_requires_hf_authorization") is True
+            )
+            inactive_hf_control = (
+                command_type == "HF" or protected_uhf_capture
+            ) and not self.hf_control_active(node.device_id)
+            if inactive_hf_control:
+                mode = "rejected"
             time.sleep(max(0, node.settings.ack_delay_ms) / 1000)
             ack = command_ack_body(
                 node.device_id,
                 command_id,
                 mode,
                 command_type=command_type,
-                error_code=None if mode == "success" else f"SIMULATED_{mode.upper()}",
-                error_message=None if mode == "success" else f"模拟设备返回 {mode}",
+                error_code=(
+                    "HF_CONTROL_INACTIVE"
+                    if inactive_hf_control
+                    else None if mode == "success" else f"SIMULATED_{mode.upper()}"
+                ),
+                error_message=(
+                    "HF control is not active on this device"
+                    if inactive_hf_control
+                    else None if mode == "success" else f"模拟设备返回 {mode}"
+                ),
             )
             node.request(
                 "/api/edge/command-ack",
@@ -421,6 +452,84 @@ class SimulatorRuntime:
             current = threading.current_thread()
             with self._command_lock:
                 self._command_threads.discard(current)
+
+    def hf_control_active(self, device_id: str) -> bool:
+        with self._hf_control_lock:
+            return device_id in self._hf_control_active
+
+    def _handle_hf_control_lifecycle(
+        self,
+        node: TcpNode,
+        message_type: str,
+        body: dict[str, Any],
+    ) -> None:
+        control_event = "start" if message_type == "hf_control_start" else "end"
+        try:
+            mode = self._ack_modes.get(node.device_id, "success")
+            if mode == "none":
+                self.logs.add("WARN", node.device_id, f"按配置忽略 HF control {control_event} ACK")
+                return
+            ack_status = "failed" if mode == "timeout" else mode
+            duration_seconds: int | None = None
+            if control_event == "start":
+                duration_seconds = int(body.get("duration_seconds", 0))
+                if duration_seconds <= 0:
+                    ack_status = "rejected"
+            time.sleep(max(0, node.settings.ack_delay_ms) / 1000)
+            if ack_status == "success":
+                if control_event == "start":
+                    self._activate_hf_control(node.device_id, duration_seconds or 0)
+                else:
+                    self._deactivate_hf_control(node.device_id)
+            ack = hf_control_ack_body(
+                control_event,
+                ack_status,
+                error_code=None if ack_status == "success" else f"SIMULATED_{ack_status.upper()}",
+                error_message=None if ack_status == "success" else f"模拟设备返回 {ack_status}",
+            )
+            node.request(
+                "/api/edge/hf-control-ack",
+                ack,
+                {"hf_control_ack"},
+                timeout=self.config.backend.response_timeout_seconds,
+            )
+            self.logs.add(
+                "INFO", node.device_id,
+                f"HF control {control_event} 已处理并回传 ACK：{ack_status}",
+                body,
+            )
+        except Exception as exc:
+            self.logs.add("ERROR", node.device_id, f"处理 HF control {control_event} 失败：{exc}", body)
+        finally:
+            current = threading.current_thread()
+            with self._command_lock:
+                self._command_threads.discard(current)
+
+    def _activate_hf_control(self, device_id: str, duration_seconds: int) -> None:
+        timer = threading.Timer(duration_seconds, self._expire_hf_control, args=(device_id,))
+        timer.daemon = True
+        with self._hf_control_lock:
+            previous = self._hf_control_timers.pop(device_id, None)
+            self._hf_control_active.add(device_id)
+            self._hf_control_timers[device_id] = timer
+        if previous is not None:
+            previous.cancel()
+        timer.start()
+
+    def _deactivate_hf_control(self, device_id: str) -> None:
+        with self._hf_control_lock:
+            timer = self._hf_control_timers.pop(device_id, None)
+            self._hf_control_active.discard(device_id)
+        if timer is not None:
+            timer.cancel()
+
+    def _expire_hf_control(self, device_id: str) -> None:
+        with self._hf_control_lock:
+            self._hf_control_timers.pop(device_id, None)
+            was_active = device_id in self._hf_control_active
+            self._hf_control_active.discard(device_id)
+        if was_active:
+            self.logs.add("INFO", device_id, "HF control 本地计时到期，已清除控制权")
 
     def _wait_for_command_handlers(self) -> None:
         deadline = time.monotonic() + self.config.backend.response_timeout_seconds + 2

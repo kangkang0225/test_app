@@ -84,6 +84,31 @@ def command_ack_body(
     return body
 
 
+def hf_control_ack_body(
+    control_event: str,
+    status: str,
+    *,
+    error_code: str | None = None,
+    error_message: str | None = None,
+) -> dict[str, Any]:
+    normalized_event = control_event.lower()
+    if normalized_event not in {"start", "end"}:
+        raise ValueError(f"Unsupported HF control event: {control_event}")
+    normalized_status = status.lower()
+    if normalized_status not in {"success", "failed", "rejected"}:
+        raise ValueError(f"Unsupported HF control ACK status: {status}")
+    body: dict[str, Any] = {
+        "control_event": normalized_event,
+        "status": normalized_status,
+        "sent_at": iso_timestamp(),
+    }
+    if error_code:
+        body["error_code"] = error_code
+    if error_message:
+        body["error_message"] = error_message
+    return body
+
+
 def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 

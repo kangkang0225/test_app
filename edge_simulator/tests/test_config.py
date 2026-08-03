@@ -34,6 +34,10 @@ class ConfigTests(unittest.TestCase):
             config.reader_for_type("HF", "maowu", hf_purpose="checkin").device_id,
             "SIM-DUFU-MAOWU-HF-CHECKIN",
         )
+        self.assertEqual(
+            config.reader_for_type("HF", "shishitang", hf_purpose="control").device_id,
+            "SIM-DUFU-SHISHITANG-HF-CONTROL",
+        )
         self.assertEqual(len(config.nodes_for_attraction("wanfolou")), 6)
         self.assertEqual(
             [device.name for device in config.devices
@@ -43,6 +47,11 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(config.ui.guide_image_path.is_file())
         self.assertTrue(next(device for device in config.devices
                              if device.name == "shaoling-camera").image_path.is_file())
+        shishitang_camera = next(
+            device for device in config.devices if device.name == "shishitang-camera"
+        )
+        self.assertTrue(shishitang_camera.config["hf_control"])
+        self.assertTrue(shishitang_camera.config["uhf_requires_hf_authorization"])
 
     def test_an_attraction_cannot_expose_multiple_hf_control_devices(self) -> None:
         source = Path(__file__).parents[1] / "config.web.example.json"
@@ -59,6 +68,23 @@ class ConfigTests(unittest.TestCase):
             path = Path(directory) / "config.json"
             path.write_text(json.dumps(raw), encoding="utf-8")
             with self.assertRaisesRegex(ConfigError, "最多只能配置一个 HF 可控设备"):
+                load_config(path)
+
+    def test_hf_authorized_uhf_camera_must_also_be_hf_controllable(self) -> None:
+        source = Path(__file__).parents[1] / "config.web.example.json"
+        raw = json.loads(source.read_text(encoding="utf-8"))
+        raw["ui"]["guide_image"] = str((source.parent / raw["ui"]["guide_image"]).resolve())
+        for attraction in raw["attractions"]:
+            attraction["image"] = str((source.parent / attraction["image"]).resolve())
+        for device in raw["devices"]:
+            if device.get("image"):
+                device["image"] = str((source.parent / device["image"]).resolve())
+        camera = next(device for device in raw["devices"] if device["name"] == "shishitang-camera")
+        del camera["config"]["hf_control"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaisesRegex(ConfigError, "HF 授权 UHF 交互"):
                 load_config(path)
 
     def test_wristband_payload_file_and_camel_case_are_supported(self) -> None:

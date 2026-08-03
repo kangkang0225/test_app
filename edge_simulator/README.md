@@ -31,6 +31,8 @@ $env:SIM_ADMIN_PASSWORD = "你的管理员密码"
 
 `provision` 会根据每个景点的 `tags`，在固定设备 `config_json` 中同步 `interaction_tags`。每个 HF Reader 必须显式填写 `hf_purpose=checkin|control`：`checkin` 只打卡、不发控制令牌；`control` 必须对应唯一一台 `devices[].config.hf_control=true` 的设备。同一景点可以各有一个不同用途的 HF Reader。修改 Reader 用途、景点标签组合或固定设备清单后，需要重新执行一次 `provision`。
 
+控制型 HF 贴卡后，受控设备会处理后端下发的 `hf_control_start`，按 `duration_seconds` 建立本地控制状态，并通过 `/api/edge/hf-control-ack` 回 ACK。收到 `hf_control_end` 或本地计时到期时只清除 HF 控制状态，不改变设备当前物理开关。未处于该状态时收到 `command_type=HF` 的命令会回 `rejected/HF_CONTROL_INACTIVE`。
+
 HF 环境设备按钮通过 App API 下发真实控制命令，因此需要设置 `SIM_APP_TOKEN`，或配置 `app.user_id` 并通过 `SIM_JWT_SECRET` 生成本地测试 JWT。UHF-A/B/C 与 HF 标签上报本身不依赖 App JWT。
 
 也可以一条命令先初始化再启动界面：

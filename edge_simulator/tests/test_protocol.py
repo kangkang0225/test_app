@@ -14,6 +14,7 @@ from edge_simulator.protocol import (
     create_app_jwt,
     encode_frame,
     event_batch_body,
+    hf_control_ack_body,
 )
 
 
@@ -38,6 +39,14 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(body["events"][0]["rssi_strength"], -51)
         self.assertIn("+00:00", body["events"][0]["event_time"])
 
+    def test_hf_event_can_omit_rssi(self) -> None:
+        body = event_batch_body(
+            "HF-1",
+            [("HF-TAG-1", datetime.now().astimezone(), None)],
+        )
+
+        self.assertNotIn("rssi_strength", body["events"][0])
+
     def test_event_batch_can_report_an_explicit_departure(self) -> None:
         moment = datetime(2026, 7, 19, 14, 31, tzinfo=timezone.utc)
         body = event_batch_body(
@@ -51,6 +60,14 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(body["command_id"], 42)
         self.assertEqual(body["status"], "failed")
         self.assertEqual(body["error_code"], "X")
+
+    def test_hf_control_ack_contract_has_no_device_or_token_id(self) -> None:
+        body = hf_control_ack_body("end", "success")
+        self.assertEqual(body["control_event"], "end")
+        self.assertEqual(body["status"], "success")
+        self.assertIn("sent_at", body)
+        self.assertNotIn("device_id", body)
+        self.assertNotIn("token_id", body)
 
     def test_locally_signed_app_jwt_has_valid_hmac(self) -> None:
         secret = "x" * 32

@@ -16,13 +16,19 @@ from edge_simulator.runtime import SimulatorRuntime
 
 
 class FakeEdgeServer:
-    def __init__(self, *, command_after_heartbeat: dict | None = None):
+    def __init__(
+        self,
+        *,
+        command_after_heartbeat: dict | None = None,
+        message_after_heartbeat: dict | None = None,
+    ):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind(("127.0.0.1", 0))
         self.server.listen()
         self.port = self.server.getsockname()[1]
         self.received: list[dict] = []
         self.command_after_heartbeat = command_after_heartbeat
+        self.message_after_heartbeat = message_after_heartbeat
         self.ack_received = threading.Event()
         self.ready = threading.Event()
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -63,6 +69,7 @@ class FakeEdgeServer:
                         "/api/edge/heartbeat": "heartbeat_ack",
                         "/api/edge/event-batches": "batch_ack",
                         "/api/edge/command-ack": "command_ack",
+                        "/api/edge/hf-control-ack": "hf_control_ack",
                     }[path]
                     response = {"type": response_type, "body": {"code": 200, "data": {"accepted": True}}}
                     connection.sendall((json.dumps(response) + "\n").encode())
@@ -70,7 +77,10 @@ class FakeEdgeServer:
                         command = {"type": "command", "body": self.command_after_heartbeat}
                         connection.sendall((json.dumps(command) + "\n").encode())
                         self.command_after_heartbeat = None
-                    if path == "/api/edge/command-ack":
+                    if path == "/api/edge/heartbeat" and self.message_after_heartbeat:
+                        connection.sendall((json.dumps(self.message_after_heartbeat) + "\n").encode())
+                        self.message_after_heartbeat = None
+                    if path in {"/api/edge/command-ack", "/api/edge/hf-control-ack"}:
                         self.ack_received.set()
 
 
@@ -132,6 +142,157 @@ class TcpClientTests(unittest.TestCase):
             self.assertTrue(server.ack_received.wait(2))
             ack = next(item for item in server.received if item["path"] == "/api/edge/command-ack")
             self.assertEqual(ack["body"]["command_id"], 88)
+            self.assertEqual(ack["body"]["status"], "success")
+        finally:
+            runtime.close()
+            server.close()
+
+    def test_hf_protected_camera_rejects_uhf_capture_while_inactive(self) -> None:
+        server = FakeEdgeServer(
+            command_after_heartbeat={
+                "command_type": "UHF",
+                "command_id": 89,
+                "device_id": "CAMERA-1",
+                "action": "capture",
+                "params": {"mode": "photo"},
+            }
+        )
+        server.start()
+        backend = BackendSettings(
+            http_base="http://127.0.0.1:1",
+            tcp_host="127.0.0.1",
+            tcp_port=server.port,
+            connect_timeout_seconds=1,
+            response_timeout_seconds=1,
+            heartbeat_interval_seconds=30,
+        )
+        camera = NodeSettings(
+            "camera",
+            "CAMERA-1",
+            "CAMERA",
+            auto_ack="success",
+            ack_delay_ms=0,
+            config={"hf_control": True, "uhf_requires_hf_authorization": True},
+        )
+        config = SimulatorConfig(
+            path=Path("fake.json"), backend=backend, wristband={}, readers=(),
+            devices=(camera,), app=AppSettings(),
+        )
+        runtime = SimulatorRuntime(config)
+        try:
+            runtime.devices["camera"].connect()
+            self.assertTrue(server.ack_received.wait(2))
+            ack = next(item for item in server.received if item["path"] == "/api/edge/command-ack")
+            self.assertEqual(ack["body"]["command_id"], 89)
+            self.assertEqual(ack["body"]["status"], "rejected")
+            self.assertEqual(ack["body"]["error_code"], "HF_CONTROL_INACTIVE")
+        finally:
+            runtime.close()
+            server.close()
+
+    def test_hf_protected_camera_accepts_uhf_capture_while_active(self) -> None:
+        server = FakeEdgeServer(
+            command_after_heartbeat={
+                "command_type": "UHF",
+                "command_id": 90,
+                "device_id": "CAMERA-1",
+                "action": "capture",
+                "params": {"mode": "photo"},
+            }
+        )
+        server.start()
+        backend = BackendSettings(
+            http_base="http://127.0.0.1:1",
+            tcp_host="127.0.0.1",
+            tcp_port=server.port,
+            connect_timeout_seconds=1,
+            response_timeout_seconds=1,
+            heartbeat_interval_seconds=30,
+        )
+        camera = NodeSettings(
+            "camera",
+            "CAMERA-1",
+            "CAMERA",
+            auto_ack="success",
+            ack_delay_ms=0,
+            config={"hf_control": True, "uhf_requires_hf_authorization": True},
+        )
+        config = SimulatorConfig(
+            path=Path("fake.json"), backend=backend, wristband={}, readers=(),
+            devices=(camera,), app=AppSettings(),
+        )
+        runtime = SimulatorRuntime(config)
+        runtime._activate_hf_control("CAMERA-1", 30)
+        try:
+            runtime.devices["camera"].connect()
+            self.assertTrue(server.ack_received.wait(2))
+            ack = next(item for item in server.received if item["path"] == "/api/edge/command-ack")
+            self.assertEqual(ack["body"]["command_id"], 90)
+            self.assertEqual(ack["body"]["status"], "success")
+        finally:
+            runtime.close()
+            server.close()
+
+    def test_runtime_acknowledges_hf_control_start_and_expires_locally(self) -> None:
+        server = FakeEdgeServer(
+            message_after_heartbeat={
+                "type": "hf_control_start",
+                "body": {"duration_seconds": 1, "sent_at": datetime.now().astimezone().isoformat()},
+            }
+        )
+        server.start()
+        backend = BackendSettings(
+            http_base="http://127.0.0.1:1",
+            tcp_host="127.0.0.1",
+            tcp_port=server.port,
+            connect_timeout_seconds=1,
+            response_timeout_seconds=1,
+            heartbeat_interval_seconds=30,
+        )
+        device = NodeSettings("light", "LIGHT-1", "LIGHT", auto_ack="success", ack_delay_ms=0)
+        config = SimulatorConfig(
+            path=Path("fake.json"), backend=backend, wristband={}, readers=(),
+            devices=(device,), app=AppSettings(),
+        )
+        runtime = SimulatorRuntime(config)
+        try:
+            runtime.devices["light"].connect()
+            self.assertTrue(server.ack_received.wait(2))
+            ack = next(item for item in server.received if item["path"] == "/api/edge/hf-control-ack")
+            self.assertEqual(ack["body"]["control_event"], "start")
+            self.assertNotIn("device_id", ack["body"])
+            self.assertTrue(runtime.hf_control_active("LIGHT-1"))
+            threading.Event().wait(1.2)
+            self.assertFalse(runtime.hf_control_active("LIGHT-1"))
+        finally:
+            runtime.close()
+            server.close()
+
+    def test_runtime_acknowledges_hf_control_end_and_only_clears_control_state(self) -> None:
+        server = FakeEdgeServer(
+            message_after_heartbeat={
+                "type": "hf_control_end",
+                "body": {"sent_at": datetime.now().astimezone().isoformat()},
+            }
+        )
+        server.start()
+        backend = BackendSettings(
+            http_base="http://127.0.0.1:1", tcp_host="127.0.0.1", tcp_port=server.port,
+            connect_timeout_seconds=1, response_timeout_seconds=1, heartbeat_interval_seconds=30,
+        )
+        device = NodeSettings("light", "LIGHT-1", "LIGHT", auto_ack="success", ack_delay_ms=0)
+        config = SimulatorConfig(
+            path=Path("fake.json"), backend=backend, wristband={}, readers=(),
+            devices=(device,), app=AppSettings(),
+        )
+        runtime = SimulatorRuntime(config)
+        runtime._activate_hf_control("LIGHT-1", 30)
+        try:
+            runtime.devices["light"].connect()
+            self.assertTrue(server.ack_received.wait(2))
+            self.assertFalse(runtime.hf_control_active("LIGHT-1"))
+            ack = next(item for item in server.received if item["path"] == "/api/edge/hf-control-ack")
+            self.assertEqual(ack["body"]["control_event"], "end")
             self.assertEqual(ack["body"]["status"], "success")
         finally:
             runtime.close()

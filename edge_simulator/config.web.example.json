@@ -42,7 +42,7 @@
       "id": "shishitang",
       "name": "诗史堂",
       "district": "草堂中轴 · 第二站",
-      "description": "本站固定安装一台留影相机；只有 App 当前绑定相机时，UHF-B 或 UHF-C 才会触发抓拍。",
+      "description": "本站演示 HF 限时持有相机：先贴卡获取控制权，授权期内可使用 UHF-B 反复抬手拍照；其他相机景点仍保留原有直接触发方式。",
       "spot_id": "SIM-DUFU-SHISHITANG",
       "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
       "simulated_dwell_seconds": 38,
@@ -135,6 +135,7 @@
     {"name": "daxie-hf", "device_id": "SIM-DUFU-DAXIE-HF", "device_type": "HF", "hf_purpose": "checkin", "attraction": "daxie"},
     {"name": "shishitang-uhf", "device_id": "SIM-DUFU-SHISHITANG-UHF", "device_type": "UHF", "attraction": "shishitang"},
     {"name": "shishitang-hf", "device_id": "SIM-DUFU-SHISHITANG-HF", "device_type": "HF", "hf_purpose": "checkin", "attraction": "shishitang"},
+    {"name": "shishitang-hf-control", "device_id": "SIM-DUFU-SHISHITANG-HF-CONTROL", "device_type": "HF", "hf_purpose": "control", "attraction": "shishitang"},
     {"name": "chaimen-uhf", "device_id": "SIM-DUFU-CHAIMEN-UHF", "device_type": "UHF", "attraction": "chaimen"},
     {"name": "chaimen-hf-checkin", "device_id": "SIM-DUFU-CHAIMEN-HF-CHECKIN", "device_type": "HF", "hf_purpose": "checkin", "attraction": "chaimen"},
     {"name": "chaimen-hf-control", "device_id": "SIM-DUFU-CHAIMEN-HF", "device_type": "HF", "hf_purpose": "control", "attraction": "chaimen"},
@@ -162,7 +163,12 @@
       "ack_delay_ms": 120,
       "auto_upload": true,
       "image": "media/dufu/02-shishitang.jpg",
-      "config": {"label": "诗史堂留影相机", "simulated": true}
+      "config": {
+        "label": "诗史堂留影相机",
+        "simulated": true,
+        "hf_control": true,
+        "uhf_requires_hf_authorization": true
+      }
     },
     {
       "name": "chaimen-light",

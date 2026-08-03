@@ -457,6 +457,13 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
                 device for device in attraction_devices
                 if device.config.get("hf_control") is True
             ]
+            for device in attraction_devices:
+                if device.config.get("uhf_requires_hf_authorization") is not True:
+                    continue
+                if device.device_type != "CAMERA" or device.config.get("hf_control") is not True:
+                    raise ConfigError(
+                        f"景点 {attraction.name} 的 HF 授权 UHF 交互只能配置在 HF 可控相机上"
+                    )
             if len(hf_control_devices) > 1:
                 raise ConfigError(f"景点 {attraction.name} 最多只能配置一个 HF 可控设备")
             if hf_control_devices and "hf" not in attraction.tags:
@@ -484,6 +491,11 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
                 raise ConfigError(f"景点 {attraction.name} 的 longitude 超出范围")
     else:
         hf_control_devices = [device for device in devices if device.config.get("hf_control") is True]
+        for device in devices:
+            if device.config.get("uhf_requires_hf_authorization") is not True:
+                continue
+            if device.device_type != "CAMERA" or device.config.get("hf_control") is not True:
+                raise ConfigError("HF 授权 UHF 交互只能配置在 HF 可控相机上")
         if len(hf_control_devices) > 1:
             raise ConfigError("单点配置最多只能声明一个 HF 可控设备")
         if hf_control_devices and "HF" not in reader_types:

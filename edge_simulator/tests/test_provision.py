@@ -141,7 +141,7 @@ class ProvisionTests(unittest.TestCase):
 
         self.assertEqual(len(result.spot_ids), 8)
         self.assertEqual(len(fake.tables["spots"]), 8)
-        self.assertEqual(len(fake.tables["readers"]), 20)
+        self.assertEqual(len(fake.tables["readers"]), 21)
         hf_purposes = {
             row["device_id"]: row["hf_purpose"]
             for row in fake.tables["readers"]
@@ -149,6 +149,7 @@ class ProvisionTests(unittest.TestCase):
         }
         self.assertEqual(hf_purposes["SIM-DUFU-GONGBUCI-HF"], "checkin")
         self.assertEqual(hf_purposes["SIM-DUFU-CHAIMEN-HF-CHECKIN"], "checkin")
+        self.assertEqual(hf_purposes["SIM-DUFU-SHISHITANG-HF-CONTROL"], "control")
         self.assertEqual(hf_purposes["SIM-DUFU-MAOWU-HF"], "control")
         self.assertEqual(len(fake.tables["devices"]), 10)
         shishitang_spot = result.spot_ids["shishitang"]
@@ -159,6 +160,7 @@ class ProvisionTests(unittest.TestCase):
         self.assertEqual({row["device_id"] for row in shishitang_nodes}, {
             "SIM-DUFU-SHISHITANG-UHF",
             "SIM-DUFU-SHISHITANG-HF",
+            "SIM-DUFU-SHISHITANG-HF-CONTROL",
             "SIM-DUFU-SHISHITANG-CAMERA",
         })
         shishitang_camera = next(
@@ -178,6 +180,8 @@ class ProvisionTests(unittest.TestCase):
             if row["spot_id"] == result.spot_ids["wanfolou"]
         ]
         self.assertEqual(json.loads(shishitang_camera["config_json"])["interaction_tags"], ["UHF-B", "UHF-C"])
+        self.assertTrue(json.loads(shishitang_camera["config_json"])["hf_control"])
+        self.assertTrue(json.loads(shishitang_camera["config_json"])["uhf_requires_hf_authorization"])
         self.assertEqual(json.loads(maowu_spray["config_json"])["interaction_tags"], ["UHF-B", "UHF-C"])
         self.assertTrue(json.loads(maowu_spray["config_json"])["hf_control"])
         self.assertTrue(json.loads(wanfolou_speaker["config_json"])["hf_control"])
