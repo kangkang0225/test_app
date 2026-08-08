@@ -42,8 +42,14 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(
             [device.name for device in config.devices
              if device.attraction_id == "maowu" and device.config.get("hf_control") is True],
-            ["maowu-spray"],
+            ["maowu-camera"],
         )
+        historical_spots = config.provision["historical_reconstruction_spots"]
+        self.assertEqual(historical_spots, [{
+            "attraction": "maowu",
+            "scene_profile": "dufu_cottage_tang_v1",
+            "enabled": True,
+        }])
         self.assertTrue(config.ui.guide_image_path.is_file())
         self.assertTrue(next(device for device in config.devices
                              if device.name == "shaoling-camera").image_path.is_file())
@@ -62,8 +68,8 @@ class ConfigTests(unittest.TestCase):
         for device in raw["devices"]:
             if device.get("image"):
                 device["image"] = str((source.parent / device["image"]).resolve())
-        camera = next(device for device in raw["devices"] if device["name"] == "maowu-camera")
-        camera["config"]["hf_control"] = True
+        spray = next(device for device in raw["devices"] if device["name"] == "maowu-spray")
+        spray["config"]["hf_control"] = True
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"
             path.write_text(json.dumps(raw), encoding="utf-8")

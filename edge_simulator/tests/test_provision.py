@@ -23,6 +23,7 @@ class FakeAdminApi:
             "wristbands": [],
             "tags": [],
             "interaction_bindings": [],
+            "historical_reconstruction_spots": [],
         }
         self.next_id = {table: 1 for table in self.tables}
 
@@ -33,6 +34,22 @@ class FakeAdminApi:
             return self._import_wristband(payload)
         parsed = urlsplit(path)
         parts = parsed.path.strip("/").split("/")
+        if parts[:4] == ["api", "admin", "historical-reconstruction", "spots"]:
+            if method != "PUT" or len(parts) != 5:
+                raise AssertionError(f"Unexpected request: {method} {path}")
+            spot_code = parts[4]
+            spot = next(row for row in self.tables["spots"] if row["spot_id"] == spot_code)
+            rows = self.tables["historical_reconstruction_spots"]
+            mapping = next((row for row in rows if row["spot_id"] == spot["id"]), None)
+            if mapping is None:
+                mapping = {
+                    "id": self._new_id("historical_reconstruction_spots"),
+                    "spot_id": spot["id"],
+                    "spot_code": spot_code,
+                }
+                rows.append(mapping)
+            mapping.update(payload)
+            return dict(mapping)
         if parts[:3] != ["api", "admin", "tables"] or len(parts) < 5:
             raise AssertionError(f"Unexpected request: {method} {path}")
         table = parts[3]
@@ -152,6 +169,13 @@ class ProvisionTests(unittest.TestCase):
         self.assertEqual(hf_purposes["SIM-DUFU-SHISHITANG-HF-CONTROL"], "control")
         self.assertEqual(hf_purposes["SIM-DUFU-MAOWU-HF"], "control")
         self.assertEqual(len(fake.tables["devices"]), 10)
+        self.assertEqual(fake.tables["historical_reconstruction_spots"], [{
+            "id": 1,
+            "spot_id": result.spot_ids["maowu"],
+            "spot_code": "SIM-DUFU-MAOWU",
+            "scene_profile": "dufu_cottage_tang_v1",
+            "enabled": True,
+        }])
         shishitang_spot = result.spot_ids["shishitang"]
         shishitang_nodes = [
             row for row in fake.tables["readers"] + fake.tables["devices"]
@@ -171,6 +195,10 @@ class ProvisionTests(unittest.TestCase):
             row for row in fake.tables["devices"]
             if row["device_id"] == "SIM-DUFU-MAOWU-SPRAY"
         )
+        maowu_camera = next(
+            row for row in fake.tables["devices"]
+            if row["device_id"] == "SIM-DUFU-MAOWU-CAMERA"
+        )
         wanfolou_speaker = next(
             row for row in fake.tables["devices"]
             if row["device_id"] == "SIM-DUFU-WANFOLOU-SPEAKER"
@@ -183,7 +211,9 @@ class ProvisionTests(unittest.TestCase):
         self.assertTrue(json.loads(shishitang_camera["config_json"])["hf_control"])
         self.assertTrue(json.loads(shishitang_camera["config_json"])["uhf_requires_hf_authorization"])
         self.assertEqual(json.loads(maowu_spray["config_json"])["interaction_tags"], ["UHF-B", "UHF-C"])
-        self.assertTrue(json.loads(maowu_spray["config_json"])["hf_control"])
+        self.assertFalse(json.loads(maowu_spray["config_json"])["hf_control"])
+        self.assertTrue(json.loads(maowu_camera["config_json"])["hf_control"])
+        self.assertTrue(json.loads(maowu_camera["config_json"])["uhf_requires_hf_authorization"])
         self.assertTrue(json.loads(wanfolou_speaker["config_json"])["hf_control"])
         self.assertEqual(
             {row["device_type"] for row in wanfolou_devices},

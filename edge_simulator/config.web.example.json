@@ -94,14 +94,14 @@
       "id": "maowu",
       "name": "茅屋故居",
       "district": "茅屋景区 · 第六站",
-      "description": "本站固定安装相机和竹林喷雾；UHF 按 App 绑定选择目标，HF 控制只操作既有喷雾。",
+      "description": "本站演示唐时草堂历史留影：先通过 HF 贴卡取得相机权限，再使用 UHF-B 抬腕拍摄；现场照片上传后异步还原唐时草堂。",
       "spot_id": "SIM-DUFU-MAOWU",
       "tags": ["uhf_a", "uhf_b", "uhf_c", "hf"],
       "simulated_dwell_seconds": 48,
       "accent": "#7A6337",
       "latitude": 30.66062,
       "longitude": 104.02805,
-      "image": "media/dufu/06-maowu.jpg"
+      "image": "media/dufu/06-maowu-history-source.jpg"
     },
     {
       "id": "shuijian",
@@ -208,8 +208,13 @@
       "auto_ack": "success",
       "ack_delay_ms": 120,
       "auto_upload": true,
-      "image": "media/dufu/06-maowu.jpg",
-      "config": {"label": "茅屋故居留影相机", "simulated": true}
+      "image": "media/dufu/06-maowu-history-source.jpg",
+      "config": {
+        "label": "茅屋故居历史留影相机",
+        "simulated": true,
+        "hf_control": true,
+        "uhf_requires_hf_authorization": true
+      }
     },
     {
       "name": "maowu-spray",
@@ -221,7 +226,6 @@
       "config": {
         "label": "茅屋竹林喷雾",
         "simulated": true,
-        "hf_control": true,
         "controls": [
           {"id": "spray-on", "label": "开启喷雾", "action": "on"},
           {"id": "spray-off", "label": "关闭喷雾", "action": "off"}
@@ -316,6 +320,13 @@
       "region": "成都市青羊区",
       "description": "杜甫草堂八景点 RFID 游玩打卡与环境设备联动测试数据",
       "status": "active"
-    }
+    },
+    "historical_reconstruction_spots": [
+      {
+        "attraction": "maowu",
+        "scene_profile": "dufu_cottage_tang_v1",
+        "enabled": true
+      }
+    ]
   }
 }

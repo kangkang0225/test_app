@@ -544,6 +544,30 @@ def load_config(path: str | os.PathLike[str]) -> SimulatorConfig:
     scenario = raw.get("scenario", {})
     if not isinstance(provision, dict) or not isinstance(scenario, dict):
         raise ConfigError("provision 与 scenario 必须是对象")
+    historical_spots = provision.get("historical_reconstruction_spots", [])
+    if not isinstance(historical_spots, list):
+        raise ConfigError("provision.historical_reconstruction_spots 必须是数组")
+    attraction_ids = {attraction.id for attraction in attractions}
+    configured_historical_attractions: set[str] = set()
+    for index, item in enumerate(historical_spots):
+        prefix = f"provision.historical_reconstruction_spots[{index}]"
+        if not isinstance(item, dict):
+            raise ConfigError(f"{prefix} 必须是对象")
+        attraction_id = _required_string(
+            item.get("attraction"), f"{prefix}.attraction"
+        ).lower()
+        if attraction_id not in attraction_ids:
+            raise ConfigError(f"{prefix}.attraction 引用了不存在的景点：{attraction_id}")
+        if attraction_id in configured_historical_attractions:
+            raise ConfigError(f"历史画面业务景点重复：{attraction_id}")
+        configured_historical_attractions.add(attraction_id)
+        scene_profile = _required_string(
+            item.get("scene_profile"), f"{prefix}.scene_profile"
+        )
+        if not re.fullmatch(r"[a-z0-9_]{3,80}", scene_profile):
+            raise ConfigError(f"{prefix}.scene_profile 格式不正确")
+        if not isinstance(item.get("enabled", True), bool):
+            raise ConfigError(f"{prefix}.enabled 必须是布尔值")
     return SimulatorConfig(
         path=config_path,
         backend=backend,

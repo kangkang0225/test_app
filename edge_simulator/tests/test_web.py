@@ -131,17 +131,17 @@ class WebControllerTests(unittest.TestCase):
     def test_hf_authorization_unlocks_configured_environment_controls(self) -> None:
         runtime = FakeRuntime(self.config)
         controller = AttractionController(self.config, runtime)
-        controller.toggle("maowu")
+        controller.toggle("chaimen")
 
         with self.assertRaisesRegex(RuntimeError, "HF"):
-            controller.control("maowu", "SIM-DUFU-MAOWU-SPRAY", "spray-on")
+            controller.control("chaimen", "SIM-DUFU-CHAIMEN-LIGHT", "light-on")
 
-        controller.trigger("maowu", "hf_control")
-        result = controller.control("maowu", "SIM-DUFU-MAOWU-SPRAY", "spray-on")
-        self.assertIn("开启喷雾", result["message"])
+        controller.trigger("chaimen", "hf_control")
+        result = controller.control("chaimen", "SIM-DUFU-CHAIMEN-LIGHT", "light-on")
+        self.assertIn("点亮门廊", result["message"])
         self.assertEqual(runtime.sent[-1], (
             "control",
-            {"device_id": "SIM-DUFU-MAOWU-SPRAY", "action": "on", "params": {}},
+            {"device_id": "SIM-DUFU-CHAIMEN-LIGHT", "action": "on", "params": {}},
         ))
 
     def test_fixed_inventory_reports_missing_dynamic_binding_without_creating_device(self) -> None:

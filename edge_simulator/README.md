@@ -27,6 +27,15 @@ $env:SIM_ADMIN_PASSWORD = "你的管理员密码"
 
 界面按导览图配置大廨、诗史堂、柴门、工部祠、少陵草堂碑亭、茅屋故居、水槛·杜甫千诗碑和万佛楼。固定设备清单由 `devices` 决定：例如诗史堂只有相机、柴门只有灯光、茅屋只有相机和喷雾，App 切换绑定不会改变这份清单。`bindings` 中 UHF-B→相机、UHF-C→灯光只用于首次初始化；后续 `provision` 会保留 App 已保存的绑定。
 
+茅屋故居是历史画面演示点：控制型 HF Reader 的唯一目标是历史留影相机，竹林喷雾保留为普通 UHF 可选设备。`provision.historical_reconstruction_spots` 会通过管理员接口幂等启用 `SIM-DUFU-MAOWU`，不会修改边缘设备协议。演示前后端还需设置：
+
+```powershell
+$env:HISTORICAL_RECONSTRUCTION_ENABLED = "true"
+$env:MINIMAX_IMAGE_API_KEY = "你的 MiniMax 图片 API Key"
+```
+
+完整演示顺序为：进入“茅屋故居” → 点击 HF 设备控制确权 → 触发 UHF-B 抬腕拍照。相机回传 ACK 后会上传 `06-maowu-history-source.jpg`，后端完成有效拍摄记录后异步创建唐时草堂照片。UHF-B 当前绑定必须是 `camera`；`provision` 会保留 App 已有绑定，因此演示前应在小程序确认一次。
+
 `media/dufu/` 保存相机预埋照片和现场导览图。照片初始不会作为景点封面直接展示；只有固定相机收到成功的 UHF 拍照命令、回传 ACK 并完成上传后，页面才会显示对应拍摄结果。配置文件中的媒体路径相对于配置文件所在目录解析。
 
 `provision` 会根据每个景点的 `tags`，在固定设备 `config_json` 中同步 `interaction_tags`。每个 HF Reader 必须显式填写 `hf_purpose=checkin|control`：`checkin` 只打卡、不发控制令牌；`control` 必须对应唯一一台 `devices[].config.hf_control=true` 的设备。同一景点可以各有一个不同用途的 HF Reader。修改 Reader 用途、景点标签组合或固定设备清单后，需要重新执行一次 `provision`。

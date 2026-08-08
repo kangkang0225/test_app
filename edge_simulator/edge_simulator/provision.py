@@ -140,6 +140,26 @@ class AdminProvisioner:
             spot_ids["default"] = self._row_id(spot, "spots")
         spot_db_id = next(iter(spot_ids.values()))
 
+        attraction_by_id = {item.id: item for item in self.config.attractions}
+        for historical in provision.get("historical_reconstruction_spots", []):
+            attraction_id = str(historical["attraction"]).strip().lower()
+            attraction = attraction_by_id[attraction_id]
+            result = self._api(
+                "PUT",
+                "/api/admin/historical-reconstruction/spots/"
+                + urllib.parse.quote(attraction.spot_id, safe=""),
+                {
+                    "scene_profile": str(historical["scene_profile"]).strip(),
+                    "enabled": bool(historical.get("enabled", True)),
+                },
+            )
+            status = "已启用" if historical.get("enabled", True) else "已停用"
+            mapping_id = result.get("id") if isinstance(result, dict) else None
+            self.actions.append(
+                f"历史画面点位 {attraction.name} {status}"
+                f"{f' #{mapping_id}' if mapping_id is not None else ''}"
+            )
+
         for reader in self.config.readers:
             self._ensure_row(
                 "readers",
